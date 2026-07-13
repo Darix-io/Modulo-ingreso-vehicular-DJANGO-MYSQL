@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.shortcuts import render
 from django.utils import timezone
-from .models import CodigoQR
+from .models import CodigoQR, HistorialIngreso
 
 class QrListView(LoginRequiredMixin, ListView):
     model = CodigoQR
@@ -18,30 +18,26 @@ def renovar_qr_view(request, pk):
     return redirect('qr:lista')
 
 def validar_acceso_view(request):
-    token = request.GET.get('token') # Recibimos el UUID por la URL
+    token = request.GET.get('token')
     resultado = None
     
     if token:
         try:
-            # Buscamos el QR por el contenido (UUID)
             qr = CodigoQR.objects.get(contenido=token)
-            
-            # Validamos reglas de negocio
             if qr.activo and qr.fecha_expiracion > timezone.now():
+                # REGISTRAMOS EL INGRESO
+                HistorialIngreso.objects.create(
+                    vehiculo=qr.vehiculo,
+                    usuario_validador=request.user
+                )
                 resultado = {
                     'status': 'success',
                     'mensaje': 'Acceso Autorizado',
                     'vehiculo': qr.vehiculo
                 }
             else:
-                resultado = {
-                    'status': 'danger',
-                    'mensaje': 'Código expirado o desactivado',
-                }
+                resultado = {'status': 'danger', 'mensaje': 'Código expirado'}
         except CodigoQR.DoesNotExist:
-            resultado = {
-                'status': 'danger',
-                'mensaje': 'Código QR no válido',
-            }
+            resultado = {'status': 'danger', 'mensaje': 'Código no válido'}
             
     return render(request, 'qr/validar.html', {'resultado': resultado})
