@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <h2 class="mb-4">Control de Acceso</h2>
+        
+        {% if resultado %}
+            <div class="alert alert-{{ resultado.status }} p-4 shadow">
+                <h3>{{ resultado.mensaje }}</h3>
+                {% if resultado.vehiculo %}
+                    <hr>
+                    <p><strong>Placa:</strong> {{ resultado.vehiculo.placa }}</p>
+                    <p><strong>Vehículo:</strong> {{ resultado.vehiculo.marca }} {{ resultado.vehiculo.modelo }}</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-muted">Esperando escaneo de código...</p>
+        {% endif %}
+        
+        <a href="{% url 'qr:validar' %}" class="btn btn-secondary mt-3">Nueva Validación</a>
+    </div>
+</div>
+{% endblock %}
