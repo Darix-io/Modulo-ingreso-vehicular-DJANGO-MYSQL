@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     
     # Nuestras aplicaciones
     'apps.usuarios',
+    'apps.propietarios',
 ]
 
 # Le indicamos a Django cuál es nuestro modelo de usuario maestro

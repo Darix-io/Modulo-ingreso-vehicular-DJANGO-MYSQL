@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Propietarios - Sistema QR{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-success"><i class="fa-solid fa-users"></i> Gestión de Propietarios</h2>
+    <a href="{% url 'propietarios:crear' %}" class="btn btn-success">
+        <i class="fa-solid fa-plus"></i> Nuevo Propietario
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead class="table-success">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Identidad</th>
+                    <th>Tipo</th>
+                    <th>Celular</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for propietario in propietarios %}
+                <tr>
+                    <td>{{ propietario.nombre }}</td>
+                    <td>{{ propietario.numero_identidad }}</td>
+                    <td><span class="badge bg-secondary">{{ propietario.tipo }}</span></td>
+                    <td>{{ propietario.celular }}</td>
+                    <td>
+                        {% if propietario.estado %}
+                            <span class="badge bg-success">Activo</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'propietarios:editar' propietario.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <a href="{% url 'propietarios:eliminar' propietario.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No hay propietarios registrados aún.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

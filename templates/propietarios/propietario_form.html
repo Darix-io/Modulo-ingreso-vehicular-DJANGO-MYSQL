@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar Propietario - Sistema QR{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
+                <h4 class="mb-0"><i class="fa-solid fa-user-plus"></i> Registrar Nuevo Propietario</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nombre Completo</label>
+                            {{ form.nombre }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Número de Identidad</label>
+                            {{ form.numero_identidad }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Celular</label>
+                            {{ form.celular }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Correo Electrónico</label>
+                            {{ form.correo }}
+                        </div>
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label fw-bold">Tipo de Propietario</label>
+                            {{ form.tipo }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'propietarios:lista' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Registro</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
