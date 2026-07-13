@@ -37,7 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Nuestras aplicaciones
+    'apps.usuarios',
 ]
+
+# Le indicamos a Django cuál es nuestro modelo de usuario maestro
+AUTH_USER_MODEL = 'usuarios.Usuario'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -132,3 +138,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Redirecciones de Autenticación
+LOGIN_REDIRECT_URL = 'usuarios:dashboard'  # <-- Modificamos esto
+LOGOUT_REDIRECT_URL = 'usuarios:login'

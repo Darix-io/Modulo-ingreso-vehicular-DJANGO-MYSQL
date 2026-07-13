@@ -1,0 +1,20 @@
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+
+class LoginForm(AuthenticationForm):
+    # Aunque internamente Django lo llama 'username', nosotros le pasamos un EmailInput
+    username = forms.CharField(
+        label='Correo Electrónico',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control form-control-lg', 
+            'placeholder': 'correo@unemi.edu.ec',
+            'autofocus': True
+        })
+    )
+    password = forms.CharField(
+        label='Contraseña',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control form-control-lg', 
+            'placeholder': 'Ingrese su contraseña'
+        })
+    )
