@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="text-success mb-4"><i class="fa-solid fa-qrcode"></i> Gestión de Códigos QR</h2>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Imagen</th>
+                    <th>Estado</th>
+                    <th>Expira</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for qr in qrs %}
+                <tr>
+                    <td>{{ qr.vehiculo.placa }}</td>
+                    <td>
+                        {% if qr.imagen %}
+                            <img src="{{ qr.imagen.url }}" style="width: 50px;">
+                        {% endif %}
+                    </td>
+                    <td>{% if qr.activo %}<span class="badge bg-success">Activo</span>{% else %}Expirado{% endif %}</td>
+                    <td>{{ qr.fecha_expiracion|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'qr:renovar' qr.pk %}" class="btn btn-sm btn-warning">Renovar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
