@@ -6,7 +6,7 @@ class LoginForm(AuthenticationForm):
     username = forms.CharField(
         label='Correo Electrónico',
         widget=forms.EmailInput(attrs={
-            'class': 'form-control form-control-lg', 
+            'class': 'form-control form-control-lg border-0 bg-white rounded-end-4 py-3',
             'placeholder': 'correo@unemi.edu.ec',
             'autofocus': True
         })
@@ -14,7 +14,7 @@ class LoginForm(AuthenticationForm):
     password = forms.CharField(
         label='Contraseña',
         widget=forms.PasswordInput(attrs={
-            'class': 'form-control form-control-lg', 
+            'class': 'form-control form-control-lg border-0 bg-white rounded-end-4 py-3',
             'placeholder': 'Ingrese su contraseña'
         })
     )

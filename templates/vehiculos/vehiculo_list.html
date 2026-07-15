@@ -8,6 +8,29 @@
     </a>
 </div>
 
+<div class="row mb-3">
+    <div class="col-lg-8">
+        <form method="GET" class="row g-2" role="search">
+            <div class="col-md-6">
+                <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Buscar por placa o propietario">
+            </div>
+            <div class="col-md-4">
+                <select name="estado" class="form-select">
+                    <option value="">Estado: Todos</option>
+                    <option value="autorizado" {% if estado_filter == 'autorizado' %}selected{% endif %}>Autorizado</option>
+                    <option value="no_autorizado" {% if estado_filter == 'no_autorizado' %}selected{% endif %}>No Autorizado</option>
+                    <option value="suspendido" {% if estado_filter == 'suspendido' %}selected{% endif %}>Suspendido</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
     <div class="card-body">
         <table class="table table-hover">
@@ -40,6 +63,16 @@
                             <a href="{% url 'vehiculos:editar' vehiculo.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
                                 <i class="fa-solid fa-pen"></i>
                             </a>
+                            {% if vehiculo.estado != 'AUTORIZADO' %}
+                            <a href="{% url 'vehiculos:activar' vehiculo.pk %}" class="btn btn-sm btn-outline-success" title="Activar">
+                                <i class="fa-solid fa-check"></i>
+                            </a>
+                            {% endif %}
+                            {% if vehiculo.estado != 'NO_AUTORIZADO' %}
+                            <a href="{% url 'vehiculos:desactivar' vehiculo.pk %}" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                                <i class="fa-solid fa-ban"></i>
+                            </a>
+                            {% endif %}
                             <a href="{% url 'vehiculos:eliminar' vehiculo.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                 <i class="fa-solid fa-trash"></i>
                             </a>
@@ -55,4 +88,34 @@
         </table>
     </div>
 </div>
+
+{% if is_paginated %}
+<nav aria-label="Paginación de vehículos" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ search_query }}&estado={{ estado_filter }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?q={{ search_query }}&estado={{ estado_filter }}&page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ search_query }}&estado={{ estado_filter }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}

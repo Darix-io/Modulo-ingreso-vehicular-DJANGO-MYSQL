@@ -10,6 +10,36 @@
     </a>
 </div>
 
+<div class="row mb-3">
+    <div class="col-lg-8">
+        <form method="GET" class="row g-2" role="search">
+            <div class="col-md-5">
+                <input type="search" name="q" value="{{ search_query }}" class="form-control" placeholder="Buscar por nombre, identidad o correo">
+            </div>
+            <div class="col-md-3">
+                <select name="tipo" class="form-select">
+                    <option value="">Tipo: Todos</option>
+                    {% for valor, etiqueta in tipo_choices %}
+                    <option value="{{ valor }}" {% if tipo_filter == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="estado" class="form-select">
+                    <option value="">Estado: Todos</option>
+                    <option value="activo" {% if estado_filter == 'activo' %}selected{% endif %}>Activo</option>
+                    <option value="inactivo" {% if estado_filter == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="submit" class="btn btn-outline-success">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card shadow-sm border-0">
     <div class="card-body">
         <table class="table table-hover">
@@ -42,6 +72,15 @@
                             <a href="{% url 'propietarios:editar' propietario.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
                                 <i class="fa-solid fa-pen"></i>
                             </a>
+                            {% if not propietario.estado %}
+                            <a href="{% url 'propietarios:activar' propietario.pk %}" class="btn btn-sm btn-outline-success" title="Activar">
+                                <i class="fa-solid fa-check"></i>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'propietarios:desactivar' propietario.pk %}" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                                <i class="fa-solid fa-ban"></i>
+                            </a>
+                            {% endif %}
                             <a href="{% url 'propietarios:eliminar' propietario.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                 <i class="fa-solid fa-trash"></i>
                             </a>
@@ -57,4 +96,35 @@
         </table>
     </div>
 </div>
+
+{% if is_paginated %}
+<nav aria-label="Paginación de propietarios" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ search_query }}&tipo={{ tipo_filter }}&estado={{ estado_filter }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?q={{ search_query }}&tipo={{ tipo_filter }}&estado={{ estado_filter }}&page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?q={{ search_query }}&tipo={{ tipo_filter }}&estado={{ estado_filter }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
 {% endblock %}

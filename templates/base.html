@@ -53,6 +53,37 @@
                             <i class="fa-solid fa-shield-check"></i> Validar Acceso
                         </a>
                     </li>
+
+                    <li class="nav-item me-3">
+                        <a class="nav-link text-white fw-bold" href="{% url 'qr:historial' %}">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Historial QR
+                        </a>
+                    </li>
+
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link dropdown-toggle text-white fw-bold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-file-lines"></i> Reportes QR
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial' %}">Ver reporte</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial_excel' %}">Descargar Excel</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial_pdf' %}">Descargar PDF</a></li>
+                        </ul>
+                    </li>
+
+                    {% if user.is_superuser or user.is_administrador %}
+                    <li class="nav-item me-3">
+                        <a class="nav-link text-white fw-bold" href="{% url 'qr:configuracion_qr' %}">
+                            <i class="fa-solid fa-gear"></i> Configuración QR
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item me-3">
+                        <a class="nav-link text-white fw-bold" href="{% url 'qr:movimientos' %}">
+                            <i class="fa-solid fa-arrows-spin"></i> Movimientos
+                        </a>
+                    </li>
                     
                     <li class="nav-item me-3">
                         <span class="text-white">
@@ -60,12 +91,9 @@
                         </span>
                     </li>
                     <li class="nav-item">
-                        <form method="POST" action="{% url 'usuarios:logout' %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <i class="fa-solid fa-right-from-bracket"></i> Salir
-                            </button>
-                        </form>
+                        <a href="{% url 'usuarios:logout' %}" class="btn btn-danger btn-sm">
+                            <i class="fa-solid fa-right-from-bracket"></i> Salir
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -73,10 +101,32 @@
     </nav>
     {% endif %}
 
-    <main class="container mt-4">
-        {% block content %}
-        {% endblock %}
+    <main class="container mt-5 mb-5">
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row gx-4">
+            {% block sidebar %}{% endblock %}
+            <div class="col">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
     </main>
+
+    <footer>
+        <div class="container text-center">
+            <small>UNEMI - Sistema de control vehicular con QR | Diseño limpio y funcional para seguridad y seguimiento.</small>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     

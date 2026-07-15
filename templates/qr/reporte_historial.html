@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% load query_transform %}
+
+{% block title %}Reporte de Historial de Accesos{% endblock %}
+
+{% block content %}
+<h2 class="text-success mb-4"><i class="fa-solid fa-file-lines"></i> Reporte de Historial de Accesos</h2>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="q" class="form-label">Buscar</label>
+                <input id="q" name="q" type="search" value="{{ search_query }}" class="form-control" placeholder="Placa, marca, modelo, validador">
+            </div>
+            <div class="col-md-2">
+                <label for="placa" class="form-label">Placa</label>
+                <input id="placa" name="placa" type="text" value="{{ placa_filter }}" class="form-control" placeholder="ABC-123">
+            </div>
+            <div class="col-md-2">
+                <label for="validador" class="form-label">Validador</label>
+                <input id="validador" name="validador" type="text" value="{{ validador_filter }}" class="form-control" placeholder="Usuario o nombre">
+            </div>
+            <div class="col-md-2">
+                <label for="fecha_inicio" class="form-label">Desde</label>
+                <input id="fecha_inicio" name="fecha_inicio" type="date" value="{{ fecha_inicio }}" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="fecha_final" class="form-label">Hasta</label>
+                <input id="fecha_final" name="fecha_final" type="date" value="{{ fecha_final }}" class="form-control">
+            </div>
+            <div class="col-md-1 d-grid">
+                <label class="form-label d-none d-md-block">.</label>
+                <button type="submit" class="btn btn-primary">Aplicar</button>
+            </div>
+            <div class="col-12 text-end">
+                <a href="{% url 'qr:reporte_historial' %}" class="btn btn-secondary">Limpiar</a>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="mb-4 d-flex flex-column flex-md-row gap-2 align-items-start justify-content-between">
+    <div>
+        <p class="mb-1 text-muted">Total de registros: <strong>{{ total_registros }}</strong></p>
+        <p class="mb-0">Usa los botones para descargar el historial filtrado o ver los datos de gráfico.</p>
+    </div>
+    <div class="btn-group">
+        <a href="{{ csv_url }}" class="btn btn-outline-success">
+            <i class="fa-solid fa-file-csv"></i> Descargar CSV
+        </a>
+        <a href="{{ excel_url }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-file-excel"></i> Descargar Excel
+        </a>
+        <a href="{{ pdf_url }}" class="btn btn-outline-danger">
+            <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+        </a>
+        <a href="{% url 'qr:historial' %}" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-list"></i> Ver historial
+        </a>
+    </div>
+</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>
+                            <a href="?{% query_transform orden=orden_fecha %}" class="text-decoration-none {% if orden == 'fecha_ingreso' or orden == '-fecha_ingreso' %}text-primary fw-bold{% endif %}">
+                                Fecha
+                                {% if orden == 'fecha_ingreso' %}
+                                    ▲
+                                {% elif orden == '-fecha_ingreso' %}
+                                    ▼
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?{% query_transform orden=orden_vehiculo %}" class="text-decoration-none {% if orden == 'vehiculo__placa' or orden == '-vehiculo__placa' %}text-primary fw-bold{% endif %}">
+                                Vehículo
+                                {% if orden == 'vehiculo__placa' %}
+                                    ▲
+                                {% elif orden == '-vehiculo__placa' %}
+                                    ▼
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="?{% query_transform orden=orden_validador %}" class="text-decoration-none {% if orden == 'usuario_validador__username' or orden == '-usuario_validador__username' %}text-primary fw-bold{% endif %}">
+                                Validador
+                                {% if orden == 'usuario_validador__username' %}
+                                    ▲
+                                {% elif orden == '-usuario_validador__username' %}
+                                    ▼
+                                {% else %}
+                                    <i class="fa-solid fa-sort"></i>
+                                {% endif %}
+                            </a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entrada in historial %}
+                    <tr>
+                        <td>{{ entrada.fecha_ingreso|date:"d/m/Y H:i" }}</td>
+                        <td>{{ entrada.vehiculo.placa }} - {{ entrada.vehiculo.marca }} {{ entrada.vehiculo.modelo }}</td>
+                        <td>
+                            {% if entrada.usuario_validador %}
+                                {{ entrada.usuario_validador.get_full_name|default:entrada.usuario_validador.username }}
+                            {% else %}
+                                Invitado
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">No hay registros con los filtros seleccionados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% if is_paginated %}
+<nav aria-label="Paginación de reporte" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<div class="card shadow-sm mt-4">
+    <div class="card-body">
+        <h5 class="mb-3">Datos de gráfico</h5>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <canvas id="chartAccesosPorDia"></canvas>
+            </div>
+            <div class="col-md-6 mb-4">
+                <canvas id="chartAccesosPorValidador"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartDataUrl = "{{ chart_data_url }}";
+
+    async function cargarGraficos() {
+        try {
+            const response = await fetch(chartDataUrl);
+            const data = await response.json();
+
+            const ctxDia = document.getElementById('chartAccesosPorDia').getContext('2d');
+            new Chart(ctxDia, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Accesos por día',
+                        data: data.totals,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            const ctxValidador = document.getElementById('chartAccesosPorValidador').getContext('2d');
+            new Chart(ctxValidador, {
+                type: 'pie',
+                data: {
+                    labels: data.labels_validador,
+                    datasets: [{
+                        data: data.totals_validador,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 206, 86, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                        ],
+                    }],
+                },
+                options: {
+                    responsive: true,
+                }
+            });
+        } catch (error) {
+            console.error('Error cargando datos de gráfico:', error);
+        }
+    }
+
+    cargarGraficos();
+</script>
+{% endblock %}

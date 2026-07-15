@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimientos de QR{% endblock %}
+
+{% block content %}
+<h2 class="text-primary mb-4"><i class="fa-solid fa-arrows-spin"></i> Movimientos de QR</h2>
+<form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-auto">
+        <label for="vehiculo" class="form-label">Filtrar por placa</label>
+        <input id="vehiculo" name="vehiculo" type="text" class="form-control" placeholder="Ej. ABC-123" value="{{ request.GET.vehiculo|default_if_none:'' }}">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Aplicar filtro</button>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'qr:movimientos' %}" class="btn btn-secondary">Ver todos</a>
+    </div>
+</form>
+<div class="mb-3">
+    {% if request.GET.vehiculo %}
+        <p class="mb-0"><strong>Mostrando movimientos para placa:</strong> {{ request.GET.vehiculo }}</p>
+    {% else %}
+        <p class="mb-0 text-muted">Mostrando todos los movimientos.</p>
+    {% endif %}
+</div>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Vehículo</th>
+                    <th>QR</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Validador</th>
+                    <th>Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimientos %}
+                <tr>
+                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>{{ mov.vehiculo.placa }} - {{ mov.vehiculo.marca }} {{ mov.vehiculo.modelo }}</td>
+                    <td>{{ mov.codigo_qr.contenido }}</td>
+                    <td>{{ mov.get_tipo_display }}</td>
+                    <td>
+                        {% if mov.estado == 'AUTORIZADO' %}
+                            <span class="badge bg-success">Autorizado</span>
+                        {% else %}
+                            <span class="badge bg-danger">Denegado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if mov.usuario_validador %}
+                            {{ mov.usuario_validador.get_full_name|default:mov.usuario_validador.username }}
+                        {% else %}
+                            Invitado
+                        {% endif %}
+                    </td>
+                    <td>{{ mov.detalle }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">No hay movimientos registrados todavía.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Paginación de movimientos" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

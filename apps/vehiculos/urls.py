@@ -1,5 +1,12 @@
 from django.urls import path
-from .views import VehiculoListView, VehiculoCreateView, VehiculoUpdateView, VehiculoDeleteView
+from .views import (
+    VehiculoListView,
+    VehiculoCreateView,
+    VehiculoUpdateView,
+    VehiculoDeleteView,
+    VehiculoActivateView,
+    VehiculoDeactivateView,
+)
 
 app_name = 'vehiculos'
 
@@ -8,4 +15,6 @@ urlpatterns = [
     path('nuevo/', VehiculoCreateView.as_view(), name='crear'),
     path('editar/<int:pk>/', VehiculoUpdateView.as_view(), name='editar'),
     path('eliminar/<int:pk>/', VehiculoDeleteView.as_view(), name='eliminar'),
+    path('activar/<int:pk>/', VehiculoActivateView.as_view(), name='activar'),
+    path('desactivar/<int:pk>/', VehiculoDeactivateView.as_view(), name='desactivar'),
 ]
