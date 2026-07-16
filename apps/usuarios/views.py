@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import date, datetime, time, timedelta
 from apps.propietarios.models import Propietario
 from apps.vehiculos.models import Vehiculo
-from apps.qr.models import ConfiguracionQR, HistorialIngreso
+from apps.qr.models import ConfiguracionQR, HistorialIngreso, RegistroMovimiento, CodigoQR
 
 class CustomLoginView(LoginView):
     template_name = 'usuarios/login.html'
@@ -48,6 +48,27 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['ingresos_mes_actual'] = HistorialIngreso.objects.filter(fecha_ingreso__gte=inicio_mes_actual).count()
         context['ingresos_mes_pasado'] = HistorialIngreso.objects.filter(fecha_ingreso__gte=inicio_mes_pasado, fecha_ingreso__lt=inicio_mes_actual).count()
         context['diferencia_mes'] = context['ingresos_mes_actual'] - context['ingresos_mes_pasado']
+
+        movimientos_hoy = RegistroMovimiento.objects.filter(fecha__gte=inicio, fecha__lt=fin).select_related('vehiculo', 'codigo_qr', 'usuario_validador')
+        context['autorizados_hoy'] = movimientos_hoy.filter(estado='AUTORIZADO').count()
+        context['denegados_hoy'] = movimientos_hoy.filter(estado='DENEGADO').count()
+        context['qr_proximos_vencer'] = CodigoQR.objects.filter(activo=True, fecha_expiracion__lte=timezone.now() + timedelta(days=3)).count()
+        context['recent_movements'] = movimientos_hoy.order_by('-fecha')[:5]
+
+        labels = []
+        autorizados = []
+        denegados = []
+        for hour in range(6, 19, 2):
+            hour_start = timezone.make_aware(datetime.combine(hoy, time(hour)))
+            hour_end = timezone.make_aware(datetime.combine(hoy, time(hour + 2)))
+            labels.append(f'{hour:02d}:00')
+            autorizados.append(movimientos_hoy.filter(estado='AUTORIZADO', fecha__gte=hour_start, fecha__lt=hour_end).count())
+            denegados.append(movimientos_hoy.filter(estado='DENEGADO', fecha__gte=hour_start, fecha__lt=hour_end).count())
+
+        context['access_chart_labels'] = labels
+        context['access_chart_autorizados'] = autorizados
+        context['access_chart_denegados'] = denegados
+
         return context
 
 

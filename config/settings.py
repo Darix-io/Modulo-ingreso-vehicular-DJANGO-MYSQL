@@ -158,5 +158,6 @@ VALIDACION_URL_BASE = os.environ.get('VALIDACION_URL_BASE', 'http://localhost:80
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Redirecciones de Autenticación
-LOGIN_REDIRECT_URL = 'usuarios:dashboard'  # <-- Modificamos esto
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = 'usuarios:dashboard'
 LOGOUT_REDIRECT_URL = 'usuarios:login'

@@ -357,13 +357,17 @@ def validar_acceso_view(request):
     token = request.GET.get('token')
     resultado = None
 
-    if token and 'token=' in token:
-        try:
-            from urllib.parse import urlparse, parse_qs
-            parsed = urlparse(token)
-            token = parse_qs(parsed.query).get('token', [token])[0]
-        except Exception:
-            pass
+    if token:
+        token = str(token).strip()
+        token = token.lstrip('+')
+
+        if 'token=' in token:
+            try:
+                from urllib.parse import urlparse, parse_qs
+                parsed = urlparse(token)
+                token = parse_qs(parsed.query).get('token', [token])[0]
+            except Exception:
+                pass
 
     if token:
         try:

@@ -4,10 +4,19 @@
 {% block title %}Reporte de Historial de Accesos{% endblock %}
 
 {% block content %}
-<h2 class="text-success mb-4"><i class="fa-solid fa-file-lines"></i> Reporte de Historial de Accesos</h2>
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
+<div class="page-shell">
+    <section class="page-header">
+        <div>
+            <h2 class="page-title"><i class="fa-solid fa-file-lines"></i> Reporte de Historial de Accesos</h2>
+            <p class="page-subtitle">Filtra, descarga y analiza el historial de accesos con una interfaz uniforme.</p>
+        </div>
+        <div class="rounded-2xl bg-white/70 px-4 py-3 text-sm font-semibold text-slate-700">
+            Total de registros: <span class="text-brand-700">{{ total_registros }}</span>
+        </div>
+    </section>
+
+    <section class="search-toolbar">
+        <form method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label for="q" class="form-label">Buscar</label>
                 <input id="q" name="q" type="search" value="{{ search_query }}" class="form-control" placeholder="Placa, marca, modelo, validador">
@@ -29,39 +38,39 @@
                 <input id="fecha_final" name="fecha_final" type="date" value="{{ fecha_final }}" class="form-control">
             </div>
             <div class="col-md-1 d-grid">
-                <label class="form-label d-none d-md-block">.</label>
-                <button type="submit" class="btn btn-primary">Aplicar</button>
+                <button type="submit" class="btn btn-success">Aplicar</button>
             </div>
-            <div class="col-12 text-end">
-                <a href="{% url 'qr:reporte_historial' %}" class="btn btn-secondary">Limpiar</a>
+            <div class="col-12 d-flex justify-content-end gap-2">
+                <a href="{% url 'qr:reporte_historial' %}" class="btn btn-outline-secondary">Limpiar</a>
             </div>
         </form>
-    </div>
-</div>
-<div class="mb-4 d-flex flex-column flex-md-row gap-2 align-items-start justify-content-between">
-    <div>
-        <p class="mb-1 text-muted">Total de registros: <strong>{{ total_registros }}</strong></p>
-        <p class="mb-0">Usa los botones para descargar el historial filtrado o ver los datos de gráfico.</p>
-    </div>
-    <div class="btn-group">
-        <a href="{{ csv_url }}" class="btn btn-outline-success">
-            <i class="fa-solid fa-file-csv"></i> Descargar CSV
-        </a>
-        <a href="{{ excel_url }}" class="btn btn-outline-primary">
-            <i class="fa-solid fa-file-excel"></i> Descargar Excel
-        </a>
-        <a href="{{ pdf_url }}" class="btn btn-outline-danger">
-            <i class="fa-solid fa-file-pdf"></i> Descargar PDF
-        </a>
-        <a href="{% url 'qr:historial' %}" class="btn btn-outline-secondary">
-            <i class="fa-solid fa-list"></i> Ver historial
-        </a>
-    </div>
-</div>
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
+    </section>
+
+    <section class="panel-card">
+        <div class="d-flex flex-column flex-md-row gap-2 align-items-start justify-content-between">
+            <div>
+                <p class="mb-1 text-muted">Usa los botones para descargar el historial filtrado o ver el detalle del gráfico.</p>
+            </div>
+            <div class="btn-group flex-wrap">
+                <a href="{{ csv_url }}" class="btn btn-outline-success">
+                    <i class="fa-solid fa-file-csv"></i> Descargar CSV
+                </a>
+                <a href="{{ excel_url }}" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-file-excel"></i> Descargar Excel
+                </a>
+                <a href="{{ pdf_url }}" class="btn btn-outline-danger">
+                    <i class="fa-solid fa-file-pdf"></i> Descargar PDF
+                </a>
+                <a href="{% url 'qr:historial' %}" class="btn btn-outline-secondary">
+                    <i class="fa-solid fa-list"></i> Ver historial
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="table-shell">
         <div class="table-responsive">
-            <table class="table table-striped align-middle">
+            <table class="table table-hover align-middle">
                 <thead>
                     <tr>
                         <th>
@@ -123,40 +132,39 @@
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-{% if is_paginated %}
-<nav aria-label="Paginación de reporte" class="mt-4">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-        {% endif %}
+    </section>
 
-        {% for num in paginator.page_range %}
-            {% if num == page_obj.number %}
-            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
-            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+    {% if is_paginated %}
+    <nav aria-label="Paginación de reporte" class="mt-1">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
             {% endif %}
-        {% endfor %}
 
-        {% if page_obj.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+            {% for num in paginator.page_range %}
+                {% if num == page_obj.number %}
+                <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
 
-<div class="card shadow-sm mt-4">
-    <div class="card-body">
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    <section class="panel-card">
         <h5 class="mb-3">Datos de gráfico</h5>
         <div class="row">
             <div class="col-md-6 mb-4">
@@ -166,7 +174,7 @@
                 <canvas id="chartAccesosPorValidador"></canvas>
             </div>
         </div>
-    </div>
+    </section>
 </div>
 {% endblock %}
 

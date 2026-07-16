@@ -23,6 +23,15 @@ class UsuariosViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Panel de Control')
 
+    def test_login_with_email_redirects_to_dashboard(self):
+        response = self.client.post('/login/', {
+            'username': 'admin@example.com',
+            'password': 'admin123'
+        }, follow=False)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/dashboard/')
+
     def test_logout_redirects_to_login(self):
         self.client.login(username='admin', password='admin123')
         response = self.client.get('/logout/')
