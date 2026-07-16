@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <h2 class="mb-4">Control de Acceso</h2>
+
+        <form method="get" action="{% url 'qr:validar' %}" class="mb-4">
+            <div class="mb-3 text-start">
+                <label for="token" class="form-label">Código QR / Token</label>
+                <input id="token" name="token" type="text" class="form-control form-control-lg" placeholder="Pega aquí el token del QR" value="{{ request.GET.token|default_if_none:'' }}" autocomplete="off" autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">Validar</button>
+        </form>
+
+        {% if resultado %}
+            <div class="alert alert-{{ resultado.status }} p-4 shadow">
+                <h3>{{ resultado.mensaje }}</h3>
+                {% if resultado.vehiculo %}
+                    <hr>
+                    <p><strong>Placa:</strong> {{ resultado.vehiculo.placa }}</p>
+                    <p><strong>Vehículo:</strong> {{ resultado.vehiculo.marca }} {{ resultado.vehiculo.modelo }}</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-muted">Escanea el QR y pega el token aquí si no se abre automáticamente.</p>
+        {% endif %}
+
+        <a href="{% url 'qr:validar' %}" class="btn btn-secondary mt-3">Limpiar</a>
+    </div>
+</div>
+{% endblock %}

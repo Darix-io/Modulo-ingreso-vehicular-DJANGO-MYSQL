@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Acceso Denegado{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0"><i class="fa-solid fa-ban"></i> Acceso Denegado</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">No se pudo autorizar el acceso.</p>
+                <p class="fw-bold">{{ resultado.mensaje }}</p>
+                <a href="{% url 'qr:validar' %}" class="btn btn-danger mt-3">Intentar otra vez</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-ec">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Módulo QR - UNEMI{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-light">
+
+    {% block top_nav %}
+    {% if user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark py-1">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="{% url 'usuarios:dashboard' %}">
+                <span class="d-inline-flex align-items-center justify-content-center rounded-2 bg-white text-success" style="width: 32px; height: 32px;">
+                    <i class="fa-solid fa-car"></i>
+                </span>
+                <span class="text-uppercase small">UNEMI QR</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
+                <ul class="navbar-nav align-items-lg-center">
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'propietarios:lista' %}">
+                            <i class="fa-solid fa-users me-1"></i> Propietarios
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'vehiculos:lista' %}">
+                            <i class="fa-solid fa-car-side me-1"></i> Vehículos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'qr:lista' %}">
+                            <i class="fa-solid fa-qrcode me-1"></i> QR
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'qr:historial' %}">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle px-2 py-1" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-file-lines me-1"></i> Reportes
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2">
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial' %}">Ver reporte</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial_excel' %}">Descargar Excel</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr:reporte_historial_pdf' %}">Descargar PDF</a></li>
+                        </ul>
+                    </li>
+                    {% if user.is_superuser or user.is_administrador %}
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'qr:configuracion_qr' %}">
+                            <i class="fa-solid fa-gear me-1"></i> Configuración
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link px-2 py-1" href="{% url 'qr:movimientos' %}">
+                            <i class="fa-solid fa-arrows-spin me-1"></i> Movimientos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link px-2 py-1 d-inline-flex align-items-center gap-2 text-white-50">
+                            <i class="fa-regular fa-circle-user"></i> {{ user.first_name|default:user.username }}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{% url 'usuarios:logout' %}" class="btn btn-danger btn-sm px-3 ms-2">
+                            <i class="fa-solid fa-right-from-bracket me-1"></i> Salir
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    {% endblock %}
+
+    <main class="container mt-5 mb-5">
+        {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="row gx-4">
+            {% block sidebar %}{% endblock %}
+            <div class="col">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container text-center">
+            <small>UNEMI - Sistema de control vehicular con QR | Diseño limpio y funcional para seguridad y seguimiento.</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

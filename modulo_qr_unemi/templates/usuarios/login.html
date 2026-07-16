@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Iniciar Sesión - UNEMI{% endblock %}
+
+{% block content %}
+<div class="container login-page py-5">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-xl-10 col-xxl-9">
+            <div class="card login-shell shadow-lg rounded-4 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-lg-6 d-none d-lg-flex">
+                        <div class="login-hero d-flex flex-column justify-content-between p-5 h-100">
+                            <div>
+                                <div class="hero-icon mb-4">
+                                    <i class="fa-solid fa-shield-car"></i>
+                                </div>
+                                <h1 class="fw-bold display-5 mb-2">UNEMI</h1>
+                                <p class="text-white-75 hero-description mb-4">Universidad Estatal de Milagro</p>
+                                <h2 class="fw-bold text-white mb-3">Sistema de Control de Acceso Vehicular</h2>
+                                <p class="text-white-75 mb-0 hero-copy">Sistema de gestión vehicular mediante Código QR para un ingreso seguro y controlado.</p>
+                            </div>
+                            <div class="hero-features mt-4">
+                                <div class="row gx-4 text-center">
+                                    <div class="col">
+                                        <div class="hero-feature-icon mb-2 mx-auto">
+                                            <i class="fa-solid fa-shield-check"></i>
+                                        </div>
+                                        <p class="text-white-75 small mb-0">Acceso Seguro</p>
+                                    </div>
+                                    <div class="col">
+                                        <div class="hero-feature-icon mb-2 mx-auto">
+                                            <i class="fa-solid fa-clock"></i>
+                                        </div>
+                                        <p class="text-white-75 small mb-0">Tiempo Real</p>
+                                    </div>
+                                    <div class="col">
+                                        <div class="hero-feature-icon mb-2 mx-auto">
+                                            <i class="fa-solid fa-chart-line"></i>
+                                        </div>
+                                        <p class="text-white-75 small mb-0">Control y Reportes</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 d-flex align-items-center justify-content-center bg-white">
+                        <div class="card login-card shadow-sm">
+                            <div class="card-body">
+                                <div class="text-center mb-5">
+                                    <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 icon-circle">
+                                        <i class="fa-solid fa-shield-car text-white fa-2xl"></i>
+                                    </div>
+                                    <h2 class="fw-bold mb-1">Iniciar sesión</h2>
+                                    <p class="text-muted mb-0">Ingrese sus credenciales para acceder al sistema</p>
+                                </div>
+
+                                <form method="POST" novalidate>
+                                    {% csrf_token %}
+                                    {% if form.errors %}
+                                        <div class="alert alert-danger" role="alert">
+                                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Correo o contraseña incorrectos.
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="mb-4">
+                                        <label for="id_username" class="form-label text-dark fw-semibold">Correo institucional</label>
+                                        <div class="input-group shadow-sm rounded-4 border border-1 bg-white">
+                                            <span class="input-group-text bg-white border-0 text-secondary rounded-start-4"><i class="fa-solid fa-envelope"></i></span>
+                                            {{ form.username }}
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="id_password" class="form-label text-dark fw-semibold">Contraseña</label>
+                                        <div class="input-group shadow-sm rounded-4 border border-1 bg-white">
+                                            <span class="input-group-text bg-white border-0 text-secondary rounded-start-4"><i class="fa-solid fa-lock"></i></span>
+                                            {{ form.password }}
+                                            <span class="input-group-text bg-white border-0 text-secondary rounded-end-4"><i class="fa-solid fa-eye"></i></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-4 small text-secondary">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                                            <label class="form-check-label" for="rememberMe">Recordar sesión</label>
+                                        </div>
+                                        <a href="#" class="text-primary text-decoration-none">¿Olvidó su contraseña?</a>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 rounded-4 py-3">
+                                        <i class="fa-solid fa-right-to-bracket me-2"></i> INGRESAR
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="card-footer bg-transparent text-center pt-0 pb-4">
+                                <div class="login-action-divider"></div>
+                                <div class="d-flex align-items-center justify-content-center gap-2 text-muted small mb-2">
+                                    <i class="fa-solid fa-lock"></i>
+                                    <span>Conexión segura</span>
+                                </div>
+                                <p class="mb-0">© 2026 Universidad Estatal de Milagro<br>Todos los derechos reservados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

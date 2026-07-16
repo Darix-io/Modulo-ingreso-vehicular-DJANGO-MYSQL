@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Acceso Autorizado{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8">
+        <div class="card shadow border-success">
+            <div class="card-header bg-success text-white">
+                <h3 class="mb-0"><i class="fa-solid fa-check-circle"></i> Acceso Autorizado</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">El acceso ha sido autorizado correctamente.</p>
+                <p><strong>Vehículo:</strong> {{ resultado.vehiculo.marca }} {{ resultado.vehiculo.modelo }}</p>
+                <p><strong>Placa:</strong> {{ resultado.vehiculo.placa }}</p>
+                <p><strong>Tipo de movimiento:</strong> {{ resultado.tipo|title }}</p>
+                <a href="{% url 'qr:validar' %}" class="btn btn-success mt-3">Volver</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

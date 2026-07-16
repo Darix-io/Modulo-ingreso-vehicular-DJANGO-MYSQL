@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Propietario - Sistema QR{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0"><i class="fa-solid fa-triangle-exclamation"></i> Confirmar Eliminación</h4>
+            </div>
+            <div class="card-body text-center p-4">
+                <h5 class="card-title">¿Está completamente seguro?</h5>
+                <p class="card-text mt-3">
+                    Está a punto de eliminar del sistema al propietario:<br>
+                    <strong>{{ object.nombre }} ({{ object.numero_identidad }})</strong>
+                </p>
+                <div class="alert alert-warning mt-3" role="alert">
+                    Esta acción es irreversible y podría afectar los registros vehiculares asociados en el futuro.
+                </div>
+                
+                <form method="POST" class="mt-4">
+                    {% csrf_token %}
+                    <a href="{% url 'propietarios:lista' %}" class="btn btn-secondary me-2">
+                        <i class="fa-solid fa-xmark"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fa-solid fa-trash"></i> Sí, Eliminar Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="text-success mb-0"><i class="fa-solid fa-qrcode"></i> Gestión de Códigos QR</h2>
+    <a href="{% url 'qr:historial' %}" class="btn btn-outline-secondary">
+        <i class="fa-solid fa-clock-rotate-left"></i> Ver Historial
+    </a>
+</div>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Vehículo</th>
+                    <th>Imagen</th>
+                    <th>Estado</th>
+                    <th>Expira</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for qr in qrs %}
+                <tr>
+                    <td>{{ qr.vehiculo.placa }}</td>
+                    <td>
+                        {% if qr.imagen %}
+                            <img src="{{ qr.imagen.url }}" style="width: 50px;">
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if qr.activo and not qr.is_expired %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif qr.is_expired %}
+                            <span class="badge bg-danger">Expirado</span>
+                        {% else %}
+                            <span class="badge bg-warning">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ qr.fecha_expiracion|date:"d/m/Y" }}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'qr:detalle' qr.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                            <a href="{% url 'qr:descargar' qr.pk %}" class="btn btn-sm btn-outline-success">Descargar</a>
+                            <a href="{% url 'qr:renovar' qr.pk %}" class="btn btn-sm btn-warning">Renovar</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if is_paginated %}
+<nav aria-label="Paginación de códigos QR" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+        {% endif %}
+
+        {% for num in paginator.page_range %}
+            {% if num == page_obj.number %}
+            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

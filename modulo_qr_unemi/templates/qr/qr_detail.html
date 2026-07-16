@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle QR - Sistema QR{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h2 class="text-success mb-4"><i class="fa-solid fa-qrcode"></i> Detalle de Código QR</h2>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-4">Vehículo</dt>
+                    <dd class="col-sm-8">{{ qr.vehiculo.placa }} - {{ qr.vehiculo.marca }} {{ qr.vehiculo.modelo }}</dd>
+
+                    <dt class="col-sm-4">Estado</dt>
+                    <dd class="col-sm-8">
+                        {% if qr.activo and not qr.is_expired %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif qr.is_expired %}
+                            <span class="badge bg-danger">Expirado</span>
+                        {% else %}
+                            <span class="badge bg-warning">Inactivo</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Creado</dt>
+                    <dd class="col-sm-8">{{ qr.fecha_creacion|date:"d/m/Y H:i" }}</dd>
+
+                    <dt class="col-sm-4">Expira</dt>
+                    <dd class="col-sm-8">{{ qr.fecha_expiracion|date:"d/m/Y H:i" }}</dd>
+
+                    <dt class="col-sm-4">Contenido</dt>
+                    <dd class="col-sm-8"><code>{{ qr.contenido }}</code></dd>
+                </dl>
+            </div>
+            <div class="col-md-6 text-center">
+                {% if qr.imagen %}
+                    <img src="{{ qr.imagen.url }}" class="img-fluid border rounded" alt="QR {{ qr.vehiculo.placa }}">
+                {% else %}
+                    <p class="text-muted">No hay imagen disponible.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'qr:descargar' qr.pk %}" class="btn btn-success">
+                <i class="fa-solid fa-download"></i> Descargar QR
+            </a>
+            <a href="{% url 'qr:renovar' qr.pk %}" class="btn btn-warning">
+                <i class="fa-solid fa-sync"></i> Renovar QR
+            </a>
+            <a href="{% url 'qr:movimientos' %}?vehiculo={{ qr.vehiculo.placa }}" class="btn btn-info text-white">
+                <i class="fa-solid fa-arrows-spin"></i> Ver Movimientos del Vehículo
+            </a>
+            <a href="{% url 'qr:lista' %}" class="btn btn-secondary">Volver a lista</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
