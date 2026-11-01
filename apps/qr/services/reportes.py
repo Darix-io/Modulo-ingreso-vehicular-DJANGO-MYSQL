@@ -25,6 +25,8 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 from ..filters import parsear_entero, parsear_fecha
 
 ENCABEZADOS = ['Fecha y hora', 'Placa', 'Marca', 'Modelo', 'Propietario', 'Tipo de propietario', 'Guardia']
+# Marca y modelo van juntos en "Vehículo" para que todo quepa en una hoja
+COLUMNAS_PDF = ['Fecha y hora', 'Placa', 'Vehículo', 'Propietario', 'Tipo de propietario', 'Guardia']
 SIN_GUARDIA = 'Sin guardia'
 MAXIMO_DIAS_GRAFICO = 366        # más días que esto no se rellenan los días sin ingresos
 
@@ -218,15 +220,13 @@ def exportar_pdf(queryset, filtros='', usuario=None):
     if usuario is not None:
         generado += f' por {nombre_guardia(usuario)}'
 
-    # Columnas del PDF: marca y modelo van juntos en "Vehículo" para que quepa todo en una hoja
-    columnas = ['Fecha y hora', 'Placa', 'Vehículo', 'Propietario', 'Tipo', 'Guardia']
-    datos = [[Paragraph(texto, encabezado) for texto in columnas]]
+    datos = [[Paragraph(texto, encabezado) for texto in COLUMNAS_PDF]]
     for fecha, placa, marca, modelo, propietario, tipo, guardia in filas:
         datos.append([
             fecha, Paragraph(f'<b>{placa}</b>', base), Paragraph(f'{marca} {modelo}', base),
             Paragraph(propietario, base), tipo, Paragraph(guardia, base),
         ])
-    anchos = [3.4 * cm, 2.5 * cm, 5.4 * cm, 6.6 * cm, 3.0 * cm, 3.8 * cm]
+    anchos = [3.4 * cm, 2.5 * cm, 5.0 * cm, 6.3 * cm, 3.9 * cm, 3.6 * cm]
     tabla = Table(datos, colWidths=anchos, repeatRows=1, hAlign='LEFT')
     estilo = [
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor(AZUL)),

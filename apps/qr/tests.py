@@ -197,6 +197,25 @@ class SeedDemoTests(TestCase):
                       'Vehículo suspendido', 'Vehículo no autorizado'}
         self.assertTrue(motivos <= permitidos, motivos - permitidos)
 
+    def test_los_denegados_por_estado_del_vehiculo_dicen_exactamente_el_motivo(self):
+        for estado, motivo in ((Vehiculo.SUSPENDIDO, 'Vehículo suspendido'),
+                               (Vehiculo.NO_AUTORIZADO, 'Vehículo no autorizado')):
+            textos = set(RegistroMovimiento.objects.filter(
+                estado=RegistroMovimiento.DENEGADO, vehiculo__estado=estado,
+                detalle__startswith='Vehículo').values_list('detalle', flat=True))
+            self.assertTrue(textos <= {motivo}, (estado, textos))
+        self.assertFalse(RegistroMovimiento.objects.filter(detalle__icontains='acceso suspendido').exists())
+
+    def test_la_migracion_corrige_los_movimientos_con_el_texto_antiguo(self):
+        from importlib import import_module
+        migracion = import_module('apps.qr.migrations.0005_corregir_motivo_suspendido')
+        movimiento = RegistroMovimiento.objects.filter(estado=RegistroMovimiento.DENEGADO).first()
+        RegistroMovimiento.objects.filter(pk=movimiento.pk).update(detalle='Vehículo acceso suspendido')
+        from django.apps import apps as registro
+        migracion.corregir_motivo(registro, None)
+        movimiento.refresh_from_db()
+        self.assertEqual(movimiento.detalle, 'Vehículo suspendido')
+
     def test_no_duplica_al_ejecutarse_dos_veces(self):
         movimientos = RegistroMovimiento.objects.count()
         salida = StringIO()

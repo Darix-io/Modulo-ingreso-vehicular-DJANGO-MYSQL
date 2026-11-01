@@ -110,6 +110,25 @@ class ValidarPorPlacaServicioTests(BaseValidarTests):
                 desde_cero(preparar)
                 self.assertEqual(validar_acceso(str(self.codigo.contenido), self.guardia).mensaje, motivo)
 
+    def test_motivo_exacto_de_cada_estado_no_autorizado(self):
+        """Cada estado que no es AUTORIZADO tiene su texto, en la regla, en el movimiento y en la pantalla."""
+        from apps.qr.services.validacion import MOTIVOS_POR_ESTADO, motivo_de_rechazo
+        esperados = {Vehiculo.SUSPENDIDO: 'Vehículo suspendido', Vehiculo.NO_AUTORIZADO: 'Vehículo no autorizado'}
+        estados_no_autorizados = {estado for estado, _ in Vehiculo.ESTADO_CHOICES if estado != Vehiculo.AUTORIZADO}
+        self.assertEqual(set(esperados), estados_no_autorizados)      # si aparece un estado nuevo, esta prueba avisa
+        self.assertEqual(MOTIVOS_POR_ESTADO, esperados)
+        self.client.force_login(self.guardia)
+        for estado, motivo in esperados.items():
+            with self.subTest(estado=estado):
+                self.vehiculo.estado = estado
+                self.assertEqual(motivo_de_rechazo(self.vehiculo.codigo_qr, ConfiguracionQR.get_solo()), motivo)
+                self.vehiculo.save(update_fields=['estado'])
+                for parametros in ({'placa': 'GSA-3841'}, {'token': str(self.codigo.contenido)}):
+                    respuesta = self.client.get(reverse('qr:validar'), parametros)
+                    self.assertContains(respuesta, motivo)
+                    self.assertEqual(self.ultimo_movimiento().detalle, motivo)
+                    self.assertNotContains(respuesta, 'acceso suspendido')
+
     def test_inactivo_y_expirado_dice_expirado_y_desactivado_solo_si_no_expiro(self):
         from apps.qr.services.validacion import motivo_de_rechazo
         configuracion = ConfiguracionQR.get_solo()

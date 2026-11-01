@@ -163,3 +163,19 @@ class DescargasTests(BaseRegistrosTests):
             'fecha_inicio': '2026-10-01', 'fecha_final': '2026-10-31'})
         for parte in ('Texto: «hilux»', 'Placa: GSA', 'Guardia: Luis Castro', 'Desde: 01/10/2026', 'Hasta: 31/10/2026'):
             self.assertIn(parte, texto)
+
+
+class EncabezadosDelPDFTests(BaseRegistrosTests):
+    def test_la_columna_del_tipo_se_llama_tipo_de_propietario(self):
+        self.assertIn('Tipo de propietario', reportes.COLUMNAS_PDF)
+        self.assertNotIn('Tipo', reportes.COLUMNAS_PDF)
+        self.assertEqual(reportes.COLUMNAS_PDF[-2], reportes.ENCABEZADOS[-2])     # igual que en Excel y CSV
+
+    def test_el_pdf_se_genera_con_esas_columnas(self):
+        self.client.force_login(self.victor)
+        self.ingreso(self.hilux, inicio_de_hoy() + timedelta(hours=7))
+        self.assertEqual(self.client.get(reverse('qr:reporte_historial_pdf')).status_code, 200)
+
+    def test_el_grafico_por_dia_usa_tension_025(self):
+        self.client.force_login(self.victor)
+        self.assertContains(self.client.get(reverse('qr:reporte_historial')), 'tension: 0.25,')
