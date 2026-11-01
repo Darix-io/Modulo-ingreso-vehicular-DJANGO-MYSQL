@@ -1,19 +1,29 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from apps.core.estilos import CLASES_INPUT, CLASES_INPUT_MONO, CLASES_SELECT
+
 from .models import Propietario
+from .validadores import validar_celular, validar_documento
 
 
 class PropietarioForm(forms.ModelForm):
     class Meta:
         model = Propietario
-        fields = ['nombre', 'numero_identidad', 'celular', 'correo', 'tipo']
+        fields = ['nombre', 'tipo', 'numero_identidad', 'celular', 'correo']
+        labels = {
+            'nombre': 'Nombre completo',
+            'tipo': 'Tipo de propietario',
+            'numero_identidad': 'Cédula de identidad',
+            'celular': 'Celular de contacto',
+            'correo': 'Correo electrónico',
+        }
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Juan Pérez'}),
-            'numero_identidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número de cédula'}),
-            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0999999999'}),
-            'correo': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@unemi.edu.ec'}),
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'nombre': forms.TextInput(attrs={'class': CLASES_INPUT, 'placeholder': 'Ej: Juan Pérez Mora', 'autofocus': True}),
+            'tipo': forms.Select(attrs={'class': CLASES_SELECT}),
+            'numero_identidad': forms.TextInput(attrs={'class': CLASES_INPUT_MONO, 'placeholder': '0912345678', 'inputmode': 'numeric'}),
+            'celular': forms.TextInput(attrs={'class': CLASES_INPUT_MONO, 'placeholder': '0991234567', 'inputmode': 'numeric', 'maxlength': 10}),
+            'correo': forms.EmailInput(attrs={'class': CLASES_INPUT, 'placeholder': 'correo@unemi.edu.ec'}),
         }
         # Django ya valida que no se repitan (unique=True en el modelo).
         # Aquí solo personalizamos el mensaje; ya no hace falta repetir la consulta a mano.
@@ -22,19 +32,26 @@ class PropietarioForm(forms.ModelForm):
             'correo': {'unique': 'Ya existe un propietario con este correo.'},
         }
 
-    def clean_numero_identidad(self):
-        numero = self.cleaned_data.get('numero_identidad', '').strip()
-        if not numero.isdigit():
-            raise ValidationError('La cédula o identidad debe contener solo números.')
-        return numero
+    def clean_nombre(self):
+        nombre = ' '.join(self.cleaned_data.get('nombre', '').split())
+        if len(nombre) < 3:
+            raise ValidationError('Ingrese el nombre y apellido completos (mínimo 3 caracteres).')
+        return nombre
 
     def clean_celular(self):
-        celular = self.cleaned_data.get('celular', '').strip()
-        if not celular.isdigit():
-            raise ValidationError('El celular debe contener solo números.')
-        if len(celular) < 7:
-            raise ValidationError('Ingrese un número de celular válido de al menos 7 dígitos.')
-        return celular
+        return validar_celular(self.cleaned_data.get('celular', ''))
 
     def clean_correo(self):
         return self.cleaned_data.get('correo', '').strip().lower()
+
+    def clean(self):
+        """La regla del documento depende del tipo, por eso se revisa aquí y no campo por campo."""
+        datos = super().clean()
+        tipo = datos.get('tipo')
+        numero = datos.get('numero_identidad')
+        if tipo and numero is not None:
+            try:
+                datos['numero_identidad'] = validar_documento(numero, tipo)
+            except ValidationError as error:
+                self.add_error('numero_identidad', error)
+        return datos

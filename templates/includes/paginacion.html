@@ -1,0 +1,38 @@
+{% comment %}
+Paginación que conserva búsqueda y filtros (usa page_obj y paginator del ListView).
+Uso: include 'includes/paginacion.html' con nombre='propietarios'
+{% endcomment %}
+{% load query_transform %}
+<div class="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+    <p>
+        {% if page_obj.paginator.count %}
+        Mostrando <strong class="font-semibold text-brand-neutral">{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong class="font-semibold text-brand-neutral">{{ page_obj.paginator.count }}</strong> {{ nombre }}
+        {% else %}Sin resultados{% endif %}
+    </p>
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Paginación de {{ nombre }}" class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?{% query_transform page=page_obj.previous_page_number %}" class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 no-underline hover:bg-slate-100" aria-label="Página anterior"><span class="material-symbols-outlined">chevron_left</span></a>
+        {% else %}
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300"><span class="material-symbols-outlined">chevron_left</span></span>
+        {% endif %}
+
+        {% for numero in paginator.page_range %}
+            {% if numero == page_obj.number %}
+            <span class="flex h-9 min-w-9 items-center justify-center rounded-lg bg-brand-primary px-2 font-semibold text-white" aria-current="page">{{ numero }}</span>
+            {% elif numero == 1 or numero == paginator.num_pages or numero >= page_obj.number|add:'-1' and numero <= page_obj.number|add:'1' %}
+            <a href="?{% query_transform page=numero %}" class="flex h-9 min-w-9 items-center justify-center rounded-lg px-2 font-medium text-slate-700 no-underline hover:bg-slate-100">{{ numero }}</a>
+            {% elif numero == page_obj.number|add:'-2' or numero == page_obj.number|add:'2' %}
+            <span class="px-1 text-slate-400">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?{% query_transform page=page_obj.next_page_number %}" class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 no-underline hover:bg-slate-100" aria-label="Página siguiente"><span class="material-symbols-outlined">chevron_right</span></a>
+        {% else %}
+        <span class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-300"><span class="material-symbols-outlined">chevron_right</span></span>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>

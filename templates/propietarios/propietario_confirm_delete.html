@@ -1,35 +1,92 @@
 {% extends 'base.html' %}
 
-{% block title %}Eliminar Propietario - Sistema QR{% endblock %}
+{% block title %}Eliminar propietario{% endblock %}
+
+{# Pantalla rediseñada: ya no necesita Bootstrap #}
+{% block legacy_css %}{% endblock %}
+{% block legacy_js %}{% endblock %}
 
 {% block content %}
-<div class="page-shell">
-    <section class="panel-shell p-4 p-lg-5 mx-auto" style="max-width: 680px;">
-        <div class="text-center">
-            <h2 class="page-title"><i class="fa-solid fa-triangle-exclamation"></i> Confirmar Eliminación</h2>
-            <p class="page-subtitle">Esta acción elimina al propietario del registro principal del sistema.</p>
+{# Estilo de ventana de confirmación (modal) centrada sobre un fondo atenuado #}
+<div class="-mx-4 -my-6 flex min-h-[calc(100vh-4.5rem)] items-start justify-center bg-slate-900/10 px-4 py-10 lg:-mx-8 lg:-my-8 lg:py-14">
+    <section class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200" role="alertdialog" aria-labelledby="titulo-eliminar">
+        <div class="px-6 pt-8 text-center sm:px-8">
+            <span class="relative mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <span class="material-symbols-outlined text-3xl">delete_forever</span>
+                <span class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white">!</span>
+            </span>
+            <h1 id="titulo-eliminar" class="mt-4 font-headline text-2xl font-bold tracking-tight text-brand-neutral">¿Eliminar propietario del sistema?</h1>
+            <p class="mx-auto mt-3 inline-flex flex-wrap items-center justify-center gap-x-2 rounded-full bg-slate-100 px-4 py-1.5 text-sm text-slate-700">
+                <strong class="font-semibold text-brand-neutral">{{ object.nombre }}</strong>
+                <span class="text-slate-400">•</span><span class="font-mono text-xs">{{ object.numero_identidad }}</span>
+                <span class="text-slate-400">•</span><span class="text-xs font-bold uppercase text-amber-700">{{ object.tipo }}</span>
+            </p>
         </div>
 
-        <div class="text-center mt-4">
-            <h5 class="card-title">¿Está completamente seguro?</h5>
-            <p class="card-text mt-3">
-                Está a punto de eliminar del sistema al propietario:<br>
-                <strong>{{ object.nombre }} ({{ object.numero_identidad }})</strong>
-            </p>
-            <div class="alert alert-warning mt-3" role="alert">
-                Esta acción es irreversible y podría afectar los registros vehiculares asociados en el futuro.
+        <div class="space-y-5 px-6 py-6 sm:px-8">
+            <div class="flex gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-900">
+                <span class="material-symbols-outlined text-2xl text-red-600">warning</span>
+                <div>
+                    <p class="font-semibold text-red-800">Esta acción es irreversible y de efecto inmediato</p>
+                    <p class="mt-1">Al eliminar a este propietario se borran también, de forma permanente, sus vehículos, sus códigos QR y todo su historial de ingresos y movimientos.</p>
+                    {% if resumen.total_vehiculos %}
+                    <p class="mt-2 flex flex-wrap items-center gap-2">Vehículos afectados:
+                        {% for vehiculo in resumen.vehiculos %}{% include 'includes/placa.html' with placa=vehiculo.placa %}{% endfor %}
+                    </p>
+                    {% endif %}
+                </div>
             </div>
 
-            <form method="POST" class="mt-4">
+            <div>
+                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Lo que se eliminará</p>
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <span class="material-symbols-outlined text-slate-500">directions_car</span>
+                        <p class="mt-1 font-mono text-xl font-bold text-brand-neutral">{{ resumen.total_vehiculos }}</p>
+                        <p class="text-xs text-slate-500">Vehículo{{ resumen.total_vehiculos|pluralize }}</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <span class="material-symbols-outlined text-slate-500">qr_code_2</span>
+                        <p class="mt-1 font-mono text-xl font-bold text-brand-neutral">{{ resumen.total_qr }}</p>
+                        <p class="text-xs text-slate-500">Código{{ resumen.total_qr|pluralize }} QR</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <span class="material-symbols-outlined text-slate-500">history</span>
+                        <p class="mt-1 font-mono text-xl font-bold text-brand-neutral">{{ resumen.total_ingresos }}</p>
+                        <p class="text-xs text-slate-500">Ingreso{{ resumen.total_ingresos|pluralize }} en el historial</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-3">
+                        <span class="material-symbols-outlined text-slate-500">swap_horiz</span>
+                        <p class="mt-1 font-mono text-xl font-bold text-brand-neutral">{{ resumen.total_movimientos }}</p>
+                        <p class="text-xs text-slate-500">Movimiento{{ resumen.total_movimientos|pluralize }}</p>
+                    </div>
+                </div>
+                <p class="mt-3 text-sm text-slate-500">¿Solo quieres impedir que ingrese? Usa <strong class="font-semibold">Desactivar</strong> en la lista: se conserva todo su historial.</p>
+            </div>
+
+            <form method="post" id="formEliminar" class="space-y-4">
                 {% csrf_token %}
-                <a href="{% url 'propietarios:lista' %}" class="btn btn-secondary me-2">
-                    <i class="fa-solid fa-xmark"></i> Cancelar
-                </a>
-                <button type="submit" class="btn btn-danger">
-                    <i class="fa-solid fa-trash"></i> Sí, Eliminar Definitivamente
-                </button>
+                <label class="flex cursor-pointer items-start gap-3 rounded-xl bg-surface-container-low p-4 text-sm text-slate-700">
+                    <input type="checkbox" name="confirmo" id="confirmo" class="mt-0.5 h-4 w-4 cursor-pointer accent-primary-container">
+                    <span>Entiendo las consecuencias y confirmo que los vehículos, códigos QR e historial de este propietario se eliminarán de forma permanente.</span>
+                </label>
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <a href="{% url 'propietarios:lista' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-50">Cancelar y mantener</a>
+                    <button type="submit" id="btnEliminar" disabled class="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300">
+                        <span class="material-symbols-outlined text-xl">delete</span>Sí, eliminar propietario
+                    </button>
+                </div>
             </form>
         </div>
     </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // El botón rojo solo se habilita al marcar la casilla (el servidor también lo comprueba)
+    const casilla = document.getElementById('confirmo');
+    const boton = document.getElementById('btnEliminar');
+    casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
+</script>
 {% endblock %}

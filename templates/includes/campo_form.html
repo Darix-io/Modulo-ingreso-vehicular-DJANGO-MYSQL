@@ -1,0 +1,19 @@
+{% comment %}
+Campo de formulario con etiqueta, ícono, ayuda y errores.
+Uso: include 'includes/campo_form.html' con campo=form.nombre icono='person' ayuda='Texto opcional'
+{% endcomment %}
+<div class="space-y-1.5">
+    <label for="{{ campo.id_for_label }}" class="block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">
+        <span data-etiqueta-{{ campo.html_name }}>{{ campo.label }}</span>{% if campo.field.required %} <span class="text-red-600" aria-hidden="true">*</span>{% endif %}
+    </label>
+    <div class="relative">
+        {% if icono %}<span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-on-surface-variant">{{ icono }}</span>{% endif %}
+        {{ campo }}
+    </div>
+    {% if ayuda and not campo.errors %}<p class="text-xs text-slate-500" data-ayuda-{{ campo.html_name }}>{{ ayuda }}</p>{% endif %}
+    {% for error in campo.errors %}
+    <p class="flex items-start gap-1.5 text-sm text-red-700" role="alert">
+        <span class="material-symbols-outlined text-base leading-5">error</span>{{ error }}
+    </p>
+    {% endfor %}
+</div>

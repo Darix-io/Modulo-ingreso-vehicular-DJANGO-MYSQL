@@ -88,6 +88,10 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
   fases). Bootstrap se carga solo en las pantallas aún no rediseñadas, vía los bloques `legacy_css` /
   `legacy_js` de `base.html`; las pantallas nuevas los dejan vacíos. Componentes reutilizables en
   `templates/includes/` (`logo`, `placa`, `badge_estado`, `avatar`). Cerrar sesión es POST.
+- Formularios: los widgets usan las clases de `apps/core/estilos.py` y las plantillas pintan cada campo con
+  `includes/campo_form.html` (ícono + errores); las listas usan `includes/paginacion.html` (conserva filtros).
+  Las reglas de validación van en un módulo propio (ej. `propietarios/validadores.py`) y se prueban solas.
+- Eliminar con cascada: pedir confirmación explícita (casilla) y mostrar lo que realmente se borra.
 - Plantillas: los botones de crear/editar/eliminar solo se muestran con `user.is_administrador`.
   `{# #}` es solo de una línea; para varias líneas usar `{% comment %}`.
 - Zona horaria `America/Guayaquil`, `USE_TZ=True`, idioma `es-ec`.
