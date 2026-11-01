@@ -71,6 +71,24 @@ class UsuariosViewsTests(TestCase):
         self.assertNotContains(respuesta, 'Configuración QR')
         self.assertContains(respuesta, 'Personal Seguridad')
 
+    def test_paginas_no_muestran_comentarios_de_plantilla_ni_texto_suelto(self):
+        # {# #} de varias líneas se imprime tal cual en la página
+        self.assertNotContains(self.client.get('/login/'), '{#')
+        self.client.force_login(self.user)
+        for url in ('/dashboard/', '/propietarios/', '/vehiculos/', '/qr/'):
+            self.assertNotContains(self.client.get(url), '{#')
+
+    def test_menu_muestra_el_rol_completo(self):
+        rol_seg = Rol.objects.create(nombre=PERSONAL_SEGURIDAD)
+        guardia = get_user_model().objects.create_user(
+            username='guardia2', email='guardia2@example.com', cedula='0922222222',
+            password='Guardia12345!', rol=rol_seg,
+        )
+        self.client.force_login(guardia)
+        respuesta = self.client.get('/dashboard/')
+        self.assertContains(respuesta, 'Personal Seguridad')   # el rol entero, sin truncar
+        self.assertContains(respuesta, 'Cerrar sesión')
+
     def test_barra_superior_muestra_fecha_y_buscador_de_placa(self):
         self.client.force_login(self.user)
         respuesta = self.client.get('/dashboard/')

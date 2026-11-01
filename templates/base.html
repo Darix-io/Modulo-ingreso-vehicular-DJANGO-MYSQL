@@ -64,8 +64,10 @@
         }
     </script>
 
-    {# TEMPORAL: Bootstrap solo para las pantallas que aún no se rediseñan.
-       Cada fase vacía este bloque en sus plantillas; al final se elimina. #}
+    {% comment %}
+    TEMPORAL: Bootstrap solo para las pantallas que aún no se rediseñan.
+    Cada fase vacía este bloque en sus plantillas; al final se elimina.
+    {% endcomment %}
     {% block legacy_css %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
@@ -85,84 +87,87 @@
         <div id="sidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/40 lg:hidden"></div>
 
         {# ---------- Menú lateral ---------- #}
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
-            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-[17rem] shrink-0 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
+            <div class="flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4">
                 {% include 'includes/logo.html' %}
                 <button id="sidebarClose" type="button" class="rounded-lg p-1 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Cerrar menú">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
 
-            <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4 text-left text-sm font-semibold">
+            <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4 text-left text-sm font-semibold">
                 <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Operación</p>
-                <a href="{% url 'usuarios:dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'dashboard' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'usuarios:dashboard' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'dashboard' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">dashboard</span>
-                    <span class="flex-1">Panel de control</span>
+                    <span class="min-w-0 flex-1 truncate">Panel de control</span>
                 </a>
-                <a href="{% url 'qr:validar' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'validar' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:validar' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'validar' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">qr_code_scanner</span>
-                    <span class="flex-1">Validar acceso</span>
-                    <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">En vivo</span>
+                    <span class="min-w-0 flex-1 truncate">Validar acceso</span>
+                    <span class="shrink-0 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">En vivo</span>
                 </a>
-                <a href="{% url 'qr:movimientos' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'movimientos' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:movimientos' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'movimientos' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
-                    <span class="flex-1">Movimientos</span>
+                    <span class="min-w-0 flex-1 truncate">Movimientos</span>
                 </a>
 
                 <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gestión</p>
-                <a href="{% url 'propietarios:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if ns == 'propietarios' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'propietarios:lista' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if ns == 'propietarios' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">groups</span>
-                    <span class="flex-1">Propietarios</span>
+                    <span class="min-w-0 flex-1 truncate">Propietarios</span>
                 </a>
-                <a href="{% url 'vehiculos:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if ns == 'vehiculos' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'vehiculos:lista' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if ns == 'vehiculos' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">directions_car</span>
-                    <span class="flex-1">Vehículos</span>
+                    <span class="min-w-0 flex-1 truncate">Vehículos</span>
                 </a>
-                <a href="{% url 'qr:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'lista' and ns == 'qr' or nombre == 'detalle' or nombre == 'credencial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:lista' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'lista' and ns == 'qr' or nombre == 'detalle' or nombre == 'credencial' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">qr_code_2</span>
-                    <span class="flex-1">Códigos QR</span>
+                    <span class="min-w-0 flex-1 truncate">Códigos QR</span>
                 </a>
 
                 <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Auditoría</p>
-                <a href="{% url 'qr:historial' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'historial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:historial' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'historial' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">history</span>
-                    <span class="flex-1">Historial</span>
+                    <span class="min-w-0 flex-1 truncate">Historial</span>
                 </a>
-                <a href="{% url 'qr:reporte_historial' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'reporte_historial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:reporte_historial' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'reporte_historial' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">bar_chart</span>
-                    <span class="flex-1">Reportes</span>
+                    <span class="min-w-0 flex-1 truncate">Reportes</span>
                 </a>
 
                 {% if user.is_administrador %}
                 <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Sistema</p>
-                <a href="{% url 'qr:configuracion_qr' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'configuracion_qr' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                <a href="{% url 'qr:configuracion_qr' %}" class="flex items-center gap-3 whitespace-nowrap rounded-lg px-3 py-2.5 text-left no-underline hover:no-underline {% if nombre == 'configuracion_qr' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[22px]">settings</span>
-                    <span class="flex-1">Configuración QR</span>
-                    <span class="rounded bg-secondary-container/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">Admin</span>
+                    <span class="min-w-0 flex-1 truncate">Configuración QR</span>
+                    <span class="shrink-0 rounded bg-secondary-container/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">Admin</span>
                 </a>
                 {% endif %}
             </nav>
 
             {# Tarjeta del usuario #}
             {% load ui %}
-            <div class="border-t border-slate-200 p-3">
-                <div class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">{{ user.get_full_name|default:user.username|iniciales }}</span>
-                    <div class="min-w-0 flex-1 text-left">
-                        <p class="truncate text-sm font-semibold text-brand-neutral">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="truncate text-xs text-slate-500">{% if user.is_administrador %}Administrador{% else %}{{ user.role_name|default:"Sin rol" }}{% endif %}</p>
+            <div class="shrink-0 border-t border-slate-200 p-3">
+                <div class="rounded-xl bg-slate-50 p-3">
+                    <div class="flex items-center gap-3">
+                        <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">{{ user.get_full_name|default:user.username|iniciales }}</span>
+                        <div class="min-w-0 flex-1 text-left">
+                            <p class="truncate text-sm font-semibold text-brand-neutral">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-xs text-slate-500">{% if user.is_administrador %}Administrador{% else %}{{ user.role_name|default:"Sin rol" }}{% endif %}</p>
+                        </div>
                     </div>
-                    <form method="post" action="{% url 'usuarios:logout' %}">
+                    <form method="post" action="{% url 'usuarios:logout' %}" class="mt-3">
                         {% csrf_token %}
-                        <button type="submit" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-red-600" title="Cerrar sesión" aria-label="Cerrar sesión">
-                            <span class="material-symbols-outlined">logout</span>
+                        <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:border-red-200 hover:text-red-600">
+                            <span class="material-symbols-outlined text-lg">logout</span>
+                            Cerrar sesión
                         </button>
                     </form>
                 </div>
             </div>
         </aside>
 
-        <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-w-0 flex-1 flex-col overflow-x-hidden">
             {# ---------- Barra superior ---------- #}
             <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
                 <div class="flex items-center gap-3 px-4 py-3 lg:px-8">
@@ -189,7 +194,7 @@
                 </div>
             </header>
 
-            <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+            <main class="min-w-0 max-w-full flex-1 px-4 py-6 lg:px-8 lg:py-8">
                 {% block content %}{% endblock %}
             </main>
         </div>

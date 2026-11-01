@@ -5,6 +5,18 @@
     box-sizing: border-box;
 }
 
+/* El contenido nunca debe desbordar: los hijos de una cuadrícula pueden encogerse
+   (sin esto, un gráfico o una tabla ancha empuja la columna fuera de la pantalla). */
+main .grid > *,
+main .flex > * {
+    min-width: 0;
+}
+
+main canvas,
+main img {
+    max-width: 100%;
+}
+
 .panel-card {
     display: flex;
     flex-direction: column;
