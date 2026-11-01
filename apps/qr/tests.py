@@ -433,3 +433,27 @@ class PeriodosEquivalentesTests(TestCase):
         self.assertEqual(datos['ingresos_mes_actual'], 1)
         self.assertEqual(datos['ingresos_mes_pasado'], 2)      # solo el 1 de octubre hasta las 03:00
         self.assertEqual(_variacion_pct(datos['ingresos_mes_actual'], datos['ingresos_mes_pasado']), -50.0)
+
+
+class SeedDemoAvisoTests(TestCase):
+    def _a_las(self, hora, minuto=0):
+        return timezone.make_aware(datetime.combine(timezone.localdate(), dtime(hora, minuto)))
+
+    def test_jornada_sin_abrir_antes_de_las_0615(self):
+        from apps.qr.management.commands.seed_demo import jornada_sin_abrir
+        self.assertTrue(jornada_sin_abrir(self._a_las(3, 19)))
+        self.assertTrue(jornada_sin_abrir(self._a_las(6, 14)))
+        self.assertFalse(jornada_sin_abrir(self._a_las(6, 15)))
+        self.assertFalse(jornada_sin_abrir(self._a_las(15)))
+
+    @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+    def test_la_terminal_explica_por_que_no_hay_movimientos_de_hoy(self):
+        from unittest import mock
+        madrugada = self._a_las(3, 19)
+        salida = StringIO()
+        with mock.patch('apps.qr.management.commands.seed_demo.timezone.localtime', return_value=madrugada):
+            call_command('seed_demo', stdout=salida)
+        texto = salida.getvalue()
+        self.assertIn('AVISO', texto)
+        self.assertIn('03:19', texto)
+        self.assertIn('seed_demo --reset', texto)

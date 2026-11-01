@@ -94,6 +94,14 @@ PLACAS_DENEGADAS_HOY = ('GAD-7712', 'GBA-9452', 'GLC-3902')
 # Peso de cada hora del día (picos a las 8 y a las 17)
 PESO_POR_HORA = {6: 1, 7: 5, 8: 8, 9: 5, 10: 3, 11: 2, 12: 3, 13: 3, 14: 2, 15: 2, 16: 3, 17: 6, 18: 5}
 DIAS_DE_MOVIMIENTOS = 30
+HORA_APERTURA = 6               # la jornada empieza a las 06:00
+MARGEN_APERTURA_MINUTOS = 15    # y hay movimientos de hoy a partir de las 06:15
+
+
+def jornada_sin_abrir(ahora):
+    """True si todavía es demasiado temprano para tener movimientos de hoy."""
+    apertura = ahora.replace(hour=HORA_APERTURA, minute=0, second=0, microsecond=0)
+    return ahora < apertura + timedelta(minutes=MARGEN_APERTURA_MINUTOS)
 
 
 def _cedula_valida(rng):
@@ -147,6 +155,13 @@ class Command(BaseCommand):
             f'Demo lista: {len(propietarios)} propietarios, {len(vehiculos)} vehículos, '
             f'{total} movimientos en los últimos {DIAS_DE_MOVIMIENTOS} días.'
         ))
+        if jornada_sin_abrir(ahora):
+            self.stdout.write(self.style.WARNING(
+                f'\nAVISO: son las {ahora:%H:%M} y la jornada empieza a las 0{HORA_APERTURA}:00, '
+                'así que NO se crearon movimientos de hoy (no se pueden inventar horas futuras).\n'
+                'El panel de control y el gráfico de hoy se verán vacíos. Para llenarlos, vuelve a '
+                'ejecutar durante el día:\n\n    python manage.py seed_demo --reset\n'
+            ))
 
     @staticmethod
     def _borrar_demo():
@@ -279,8 +294,8 @@ class Command(BaseCommand):
         además tres intentos denegados con motivos reales: QR expirado, vehículo
         suspendido y propietario inactivo.
         """
-        inicio = ahora.replace(hour=6, minute=0, second=0, microsecond=0)
-        if ahora < inicio + timedelta(minutes=15):
+        inicio = ahora.replace(hour=HORA_APERTURA, minute=0, second=0, microsecond=0)
+        if jornada_sin_abrir(ahora):
             return []        # todavía no abre la jornada: no hay nada que mostrar
 
         segundos = int((ahora - inicio).total_seconds())
