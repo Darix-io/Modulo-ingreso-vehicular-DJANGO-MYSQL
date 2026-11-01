@@ -82,8 +82,13 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
   comentarios. Funciones y variables en `snake_case`, clases en `PascalCase`.
 - Docstrings cortos que expliquen el *por qué*; archivos de servicio abren con un docstring del flujo.
 - Constantes de choices como atributos de clase (`INGRESO`, `AUTORIZADO`, …), nunca strings sueltos.
-- Vistas basadas en clases con mixins de permisos; plantillas heredan de `templates/base.html`
-  y usan Bootstrap 5.
+- Vistas basadas en clases con mixins de permisos; plantillas heredan de `templates/base.html`.
+- Interfaz: **Tailwind (CDN) + Material Symbols**, siguiendo `INSTRUCCIONES-DISENO.md` (rediseño por
+  fases). Bootstrap se carga solo en las pantallas aún no rediseñadas, vía los bloques `legacy_css` /
+  `legacy_js` de `base.html`; las pantallas nuevas los dejan vacíos. Componentes reutilizables en
+  `templates/includes/` (`logo`, `placa`, `badge_estado`, `avatar`). Cerrar sesión es POST.
+- Plantillas: los botones de crear/editar/eliminar solo se muestran con `user.is_administrador`.
+  `{# #}` es solo de una línea; para varias líneas usar `{% comment %}`.
 - Zona horaria `America/Guayaquil`, `USE_TZ=True`, idioma `es-ec`.
 - Todo cambio de modelo lleva su migración; `makemigrations --check` debe quedar limpio.
 - Toda regla de negocio nueva lleva su prueba en `tests.py` de la app. Las pruebas actuales

@@ -1,0 +1,14 @@
+{% comment %}
+Badge de estado. Uso: include 'includes/badge_estado.html' con texto="Autorizado" tono="verde"
+Tonos: verde (autorizado/activo/vigente), rojo (denegado/suspendido/expirado),
+gris (no autorizado/inactivo), ambar (por vencer).
+{% endcomment %}
+<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold
+    {% if tono == 'verde' %}bg-emerald-100 text-emerald-800
+    {% elif tono == 'rojo' %}bg-red-100 text-red-800
+    {% elif tono == 'ambar' %}bg-amber-100 text-amber-800
+    {% else %}bg-slate-200 text-slate-700{% endif %}">
+    <span class="h-1.5 w-1.5 rounded-full
+        {% if tono == 'verde' %}bg-emerald-500{% elif tono == 'rojo' %}bg-red-500{% elif tono == 'ambar' %}bg-amber-500{% else %}bg-slate-500{% endif %}"></span>
+    {{ texto }}
+</span>

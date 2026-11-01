@@ -4,202 +4,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema QR UNEMI{% endblock %}</title>
+    <title>{% block title %}GaritaQR{% endblock %} · GaritaQR</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
     <script>
+        /* Design system GaritaQR.
+           - "brand-*": colores de la marca (ver INSTRUCCIONES-DISENO.md, sección 2).
+           - El resto de nombres (primary-container, surface-*, on-surface...) son los tokens
+             exportados de Stitch, para poder adaptar sus pantallas sin cambiar los nombres. */
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif']
-                    },
                     colors: {
                         brand: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0f766e',
-                            700: '#0d5c56'
-                        }
+                            primary: '#0A2540',
+                            secondary: '#F59E0B',
+                            tertiary: '#1E3A8A',
+                            neutral: '#0F172A',
+                            fondo: '#F5F7FB'
+                        },
+                        'background': '#F5F7FB',
+                        'surface': '#faf8ff',
+                        'surface-container-lowest': '#ffffff',
+                        'surface-container-low': '#f2f3ff',
+                        'surface-container': '#eaedff',
+                        'surface-container-high': '#e2e7ff',
+                        'surface-container-highest': '#dae2fd',
+                        'on-surface': '#131b2e',
+                        'on-surface-variant': '#43474d',
+                        'outline': '#74777e',
+                        'outline-variant': '#c4c6ce',
+                        'primary': '#000f22',
+                        'on-primary': '#ffffff',
+                        'primary-container': '#0A2540',
+                        'on-primary-container': '#768dad',
+                        'secondary-container': '#F59E0B',
+                        'on-secondary-container': '#2a1700',
+                        'tertiary-container': '#1E3A8A',
+                        'error': '#ba1a1a',
+                        'error-container': '#ffdad6',
+                        'on-error-container': '#93000a'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        headline: ['Hanken Grotesk', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
                     },
                     boxShadow: {
-                        soft: '0 10px 30px rgba(15, 23, 42, 0.08)'
+                        soft: '0 4px 20px rgba(15, 23, 42, 0.06)'
                     }
                 }
             }
         }
     </script>
 
+    {# TEMPORAL: Bootstrap solo para las pantallas que aún no se rediseñan.
+       Cada fase vacía este bloque en sus plantillas; al final se elimina. #}
+    {% block legacy_css %}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.min.css" rel="stylesheet">
+    {% endblock %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="min-h-full bg-slate-50 text-slate-900 antialiased">
-    <div class="min-h-screen bg-slate-100/70">
-        <div class="flex min-h-screen">
-            <div id="sidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/30 lg:hidden"></div>
-            <aside id="sidebar" class="{% if not user.is_authenticated %}hidden{% endif %} fixed inset-y-0 left-0 z-40 w-80 -translate-x-full border-r border-slate-200 bg-white/95 shadow-soft backdrop-blur transition-transform duration-300 lg:static lg:w-72 lg:translate-x-0">
-                <div class="flex h-full flex-col">
-                    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-5">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-sm">
-                                <i data-lucide="shield-check" class="h-5 w-5"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">UNEMI</p>
-                                <h1 class="text-base font-bold text-slate-900">Control QR</h1>
-                            </div>
-                        </div>
-                        <button id="sidebarClose" class="rounded-xl border border-slate-200 p-2 text-slate-500 lg:hidden">
-                            <i data-lucide="x" class="h-4 w-4"></i>
-                        </button>
+
+{% if user.is_authenticated %}
+{% with ns=request.resolver_match.namespace nombre=request.resolver_match.url_name %}
+<body class="min-h-full bg-brand-fondo font-sans text-brand-neutral antialiased">
+    <div class="flex min-h-screen">
+        <div id="sidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/40 lg:hidden"></div>
+
+        {# ---------- Menú lateral ---------- #}
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                {% include 'includes/logo.html' %}
+                <button id="sidebarClose" type="button" class="rounded-lg p-1 text-slate-500 hover:bg-slate-100 lg:hidden" aria-label="Cerrar menú">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4 text-left text-sm font-semibold">
+                <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Operación</p>
+                <a href="{% url 'usuarios:dashboard' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'dashboard' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">dashboard</span>
+                    <span class="flex-1">Panel de control</span>
+                </a>
+                <a href="{% url 'qr:validar' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'validar' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">qr_code_scanner</span>
+                    <span class="flex-1">Validar acceso</span>
+                    <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-700">En vivo</span>
+                </a>
+                <a href="{% url 'qr:movimientos' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'movimientos' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+                    <span class="flex-1">Movimientos</span>
+                </a>
+
+                <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Gestión</p>
+                <a href="{% url 'propietarios:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if ns == 'propietarios' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">groups</span>
+                    <span class="flex-1">Propietarios</span>
+                </a>
+                <a href="{% url 'vehiculos:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if ns == 'vehiculos' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">directions_car</span>
+                    <span class="flex-1">Vehículos</span>
+                </a>
+                <a href="{% url 'qr:lista' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'lista' and ns == 'qr' or nombre == 'detalle' or nombre == 'credencial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">qr_code_2</span>
+                    <span class="flex-1">Códigos QR</span>
+                </a>
+
+                <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Auditoría</p>
+                <a href="{% url 'qr:historial' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'historial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">history</span>
+                    <span class="flex-1">Historial</span>
+                </a>
+                <a href="{% url 'qr:reporte_historial' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'reporte_historial' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">bar_chart</span>
+                    <span class="flex-1">Reportes</span>
+                </a>
+
+                {% if user.is_administrador %}
+                <p class="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Sistema</p>
+                <a href="{% url 'qr:configuracion_qr' %}" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-left {% if nombre == 'configuracion_qr' %}bg-brand-primary text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+                    <span class="material-symbols-outlined text-[22px]">settings</span>
+                    <span class="flex-1">Configuración QR</span>
+                    <span class="rounded bg-secondary-container/20 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-700">Admin</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            {# Tarjeta del usuario #}
+            {% load ui %}
+            <div class="border-t border-slate-200 p-3">
+                <div class="flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">{{ user.get_full_name|default:user.username|iniciales }}</span>
+                    <div class="min-w-0 flex-1 text-left">
+                        <p class="truncate text-sm font-semibold text-brand-neutral">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="truncate text-xs text-slate-500">{% if user.is_administrador %}Administrador{% else %}{{ user.role_name|default:"Sin rol" }}{% endif %}</p>
                     </div>
+                    <form method="post" action="{% url 'usuarios:logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-red-600" title="Cerrar sesión" aria-label="Cerrar sesión">
+                            <span class="material-symbols-outlined">logout</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </aside>
 
-                    <nav class="flex-1 space-y-3 px-4 py-5">
-                        <p class="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Operación</p>
-                        <a href="{% url 'usuarios:dashboard' %}" class="nav-item flex items-center gap-3 {% if request.path == '/dashboard/' %}active{% endif %}">
-                            <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Dashboard</span>
-                        </a>
-                        <a href="{% url 'vehiculos:lista' %}" class="nav-item flex items-center gap-3 {% if '/vehiculos/' in request.path %}active{% endif %}">
-                            <i data-lucide="car-front" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Vehículos</span>
-                        </a>
-                        <a href="{% url 'propietarios:lista' %}" class="nav-item flex items-center gap-3 {% if '/propietarios/' in request.path %}active{% endif %}">
-                            <i data-lucide="users" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Propietarios</span>
-                        </a>
-                        <a href="{% url 'qr:lista' %}" class="nav-item flex items-center gap-3 {% if '/qr/' in request.path or '/validar/' in request.path or '/historial/' in request.path or '/reportes/' in request.path %}active{% endif %}">
-                            <i data-lucide="qr-code" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Códigos QR</span>
-                        </a>
-                        <a href="{% url 'qr:validar' %}" class="nav-item flex items-center gap-3 {% if request.path == '/validar/' %}active{% endif %}">
-                            <i data-lucide="shield" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Validaciones</span>
-                        </a>
-                        <a href="{% url 'qr:historial' %}" class="nav-item flex items-center gap-3 {% if request.path == '/historial/' %}active{% endif %}">
-                            <i data-lucide="history" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Historial</span>
-                        </a>
-                        <a href="{% url 'qr:reporte_historial' %}" class="nav-item flex items-center gap-3 {% if request.path == '/reportes/' %}active{% endif %}">
-                            <i data-lucide="file-bar-chart" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Reportes</span>
-                        </a>
-                        {% if user.is_superuser or user.is_administrador %}
-                        <div class="pt-2">
-                            <p class="px-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Administración</p>
-                        </div>
-                        <a href="{% url 'qr:configuracion_qr' %}" class="nav-item flex items-center gap-3 {% if '/configuracion/' in request.path %}active{% endif %}">
-                            <i data-lucide="settings" class="w-5 h-5 shrink-0"></i>
-                            <span class="flex-1 whitespace-nowrap">Configuración</span>
-                        </a>
-                        {% endif %}
-                    </nav>
+        <div class="flex min-w-0 flex-1 flex-col">
+            {# ---------- Barra superior ---------- #}
+            <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
+                <div class="flex items-center gap-3 px-4 py-3 lg:px-8">
+                    <button id="sidebarToggle" type="button" class="rounded-lg border border-slate-200 p-1.5 text-slate-600 lg:hidden" aria-label="Abrir menú">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
 
-                    <div class="border-t border-slate-200 px-4 py-4">
-                        <div class="rounded-2xl bg-slate-50 p-4">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                                    <i data-lucide="user-round" class="h-5 w-5"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-semibold text-slate-900">{{ user.get_full_name|default:user.username }}</p>
-                                    <p class="text-xs text-slate-500">Rol activo</p>
-                                </div>
-                            </div>
-                        </div>
+                    <form method="get" action="{% url 'vehiculos:lista' %}" class="relative min-w-0 flex-1 md:max-w-md">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">search</span>
+                        <input type="text" name="q" placeholder="Buscar por placa…" autocomplete="off"
+                               class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 font-mono text-sm uppercase placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 focus:border-brand-primary focus:outline-none">
+                    </form>
+
+                    <div class="ml-auto flex items-center gap-4 text-sm">
+                        <span class="hidden items-center gap-2 font-medium text-emerald-700 sm:inline-flex">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                                <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                            </span>
+                            Sistema activo
+                        </span>
+                        <span class="hidden font-mono text-xs text-slate-500 md:inline">{% now "l, j \d\e F \d\e Y" %}</span>
                     </div>
                 </div>
-            </aside>
+            </header>
 
-            <div class="flex-1 min-w-0">
-                {% if user.is_authenticated %}
-                <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
-                    <div class="flex items-center gap-3 px-4 py-4 lg:px-8">
-                        <button id="sidebarToggle" class="rounded-xl border border-slate-200 p-2 text-slate-600 lg:hidden">
-                            <i data-lucide="menu" class="h-4 w-4"></i>
-                        </button>
-
-                        <div class="hidden flex-1 md:block">
-                            <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                                <i data-lucide="search" class="h-4 w-4"></i>
-                                <span>Buscar vehículos, propietarios o accesos</span>
-                            </div>
-                        </div>
-
-                        <div class="ml-auto flex items-center gap-2">
-                            <button class="rounded-xl border border-slate-200 p-2 text-slate-600">
-                                <i data-lucide="bell" class="h-4 w-4"></i>
-                            </button>
-                            <button id="themeToggle" class="rounded-xl border border-slate-200 p-2 text-slate-600">
-                                <i data-lucide="moon" class="h-4 w-4"></i>
-                            </button>
-                            <a href="{% url 'usuarios:logout' %}" class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700">
-                                <i data-lucide="log-out" class="h-4 w-4"></i>
-                                <span>Salir</span>
-                            </a>
-                        </div>
-                    </div>
-                </header>
-                {% endif %}
-
-                <main class="px-4 py-6 lg:px-8 lg:py-8">
-                    {% if messages %}
-                    <div class="mb-5 space-y-3">
-                        {% for message in messages %}
-                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-soft">
-                            {{ message }}
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-
-                    {% block content %}{% endblock %}
-                </main>
-            </div>
+            <main class="flex-1 px-4 py-6 lg:px-8 lg:py-8">
+                {% block content %}{% endblock %}
+            </main>
         </div>
     </div>
+{% endwith %}
+{% else %}
+<body class="min-h-full bg-brand-fondo font-sans text-brand-neutral antialiased">
+    {# Sin sesión (login): la plantilla ocupa toda la pantalla, sin menú #}
+    {% block content_anonimo %}{% endblock %}
+{% endif %}
 
+    {# ---------- Mensajes (toasts) ---------- #}
+    {% if messages %}
+    <div id="toasts" class="pointer-events-none fixed right-4 top-4 z-50 flex w-full max-w-sm flex-col gap-3">
+        {% for message in messages %}
+        <div class="toast pointer-events-auto flex items-start gap-3 rounded-xl border bg-white p-4 shadow-lg transition-all duration-300
+            {% if message.level_tag == 'success' %}border-emerald-200{% elif message.level_tag == 'error' %}border-red-200{% elif message.level_tag == 'warning' %}border-amber-200{% else %}border-blue-200{% endif %}" role="status">
+            <span class="material-symbols-outlined mt-0.5
+                {% if message.level_tag == 'success' %}text-emerald-600{% elif message.level_tag == 'error' %}text-red-600{% elif message.level_tag == 'warning' %}text-amber-600{% else %}text-blue-600{% endif %}">
+                {% if message.level_tag == 'success' %}check_circle{% elif message.level_tag == 'error' %}error{% elif message.level_tag == 'warning' %}warning{% else %}info{% endif %}
+            </span>
+            <p class="flex-1 text-sm font-medium text-brand-neutral">{{ message }}</p>
+            <button type="button" class="toast-cerrar text-slate-400 hover:text-slate-700" aria-label="Cerrar">
+                <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# TEMPORAL: scripts de las pantallas antiguas (ver legacy_css) #}
+    {% block legacy_js %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.0/dist/sweetalert2.all.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <script>if (window.lucide) lucide.createIcons();</script>
+    {% endblock %}
+
     <script>
-        lucide.createIcons();
-
+        // Menú lateral en móvil
         const sidebar = document.getElementById('sidebar');
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarClose = document.getElementById('sidebarClose');
-        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const backdrop = document.getElementById('sidebarBackdrop');
+        const abrirMenu = () => { sidebar?.classList.remove('-translate-x-full'); backdrop?.classList.remove('hidden'); };
+        const cerrarMenu = () => { sidebar?.classList.add('-translate-x-full'); backdrop?.classList.add('hidden'); };
+        document.getElementById('sidebarToggle')?.addEventListener('click', abrirMenu);
+        document.getElementById('sidebarClose')?.addEventListener('click', cerrarMenu);
+        backdrop?.addEventListener('click', cerrarMenu);
 
-        const closeSidebar = () => {
-            sidebar?.classList.add('-translate-x-full');
-            sidebarBackdrop?.classList.add('hidden');
-        };
-
-        const openSidebar = () => {
-            sidebar?.classList.remove('-translate-x-full');
-            sidebarBackdrop?.classList.remove('hidden');
-        };
-
-        sidebarToggle?.addEventListener('click', openSidebar);
-        sidebarClose?.addEventListener('click', closeSidebar);
-        sidebarBackdrop?.addEventListener('click', closeSidebar);
-
-        document.querySelectorAll('[href]').forEach((link) => {
-            if (window.innerWidth < 1024) {
-                link.addEventListener('click', closeSidebar);
-            }
-        });
-
-        const themeToggle = document.getElementById('themeToggle');
-        themeToggle?.addEventListener('click', () => {
-            document.body.classList.toggle('dark-theme');
+        // Toasts: se cierran solos a los 5 segundos o con la X
+        document.querySelectorAll('.toast').forEach((toast) => {
+            const quitar = () => {
+                toast.classList.add('opacity-0', 'translate-x-4');
+                setTimeout(() => toast.remove(), 300);
+            };
+            toast.querySelector('.toast-cerrar')?.addEventListener('click', quitar);
+            setTimeout(quitar, 5000);
         });
     </script>
     {% block scripts %}{% endblock %}

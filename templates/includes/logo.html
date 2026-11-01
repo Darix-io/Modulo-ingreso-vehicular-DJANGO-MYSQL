@@ -1,0 +1,10 @@
+{# Logo de GaritaQR. Uso: {% include 'includes/logo.html' %}  o  con claro=True sobre fondos oscuros #}
+<div class="flex items-center gap-3">
+    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-container text-brand-primary shadow-sm">
+        <span class="material-symbols-outlined text-2xl font-bold">qr_code_scanner</span>
+    </div>
+    <div class="leading-tight">
+        <span class="font-headline text-xl font-bold tracking-tight {% if claro %}text-white{% else %}text-brand-primary{% endif %}">Garita<span class="text-secondary-container">QR</span></span>
+        <p class="text-[11px] font-medium {% if claro %}text-white/70{% else %}text-slate-500{% endif %}">UNEMI</p>
+    </div>
+</div>

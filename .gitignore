@@ -23,3 +23,6 @@ db.sqlite3
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Referencia de diseño (Stitch), no se sube a GitHub
+diseno-stitch/

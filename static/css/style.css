@@ -1,15 +1,8 @@
-body {
-    font-family: 'Inter', sans-serif;
-    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-    color: #0f172a;
-}
+/* GaritaQR - estilos propios.
+   El diseño base (colores, fuentes) está en la configuración de Tailwind de base.html. */
 
 * {
     box-sizing: border-box;
-}
-
-main {
-    color: #0f172a;
 }
 
 .panel-card {
@@ -27,41 +20,6 @@ main {
 .panel-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 20px 45px rgba(15, 23, 42, 0.11);
-}
-
-.nav-item {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-start;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 16px;
-    border-radius: 14px;
-    text-decoration: none;
-    color: #475569;
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.nav-item i,
-.nav-item svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    display: block;
-}
-
-.nav-item span {
-    display: block;
-    white-space: nowrap;
-    line-height: 1.2;
-}
-
-.nav-item:hover,
-.nav-item.active {
-    background: rgba(20, 184, 166, 0.12);
-    color: #0f766e;
 }
 
 .badge-success,
@@ -206,9 +164,10 @@ main {
 
 .form-control,
 .form-select {
-    border-radius: 14px;
-    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    border: 1px solid #c4c6ce;
     background: #fff;
+    color: #131b2e;
     box-shadow: none;
     min-height: 46px;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -216,8 +175,13 @@ main {
 
 .form-control:focus,
 .form-select:focus {
-    border-color: rgba(20, 184, 166, 0.58);
-    box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.14);
+    border-color: #0a2540;
+    box-shadow: 0 0 0 0.2rem rgba(10, 37, 64, 0.14);
+}
+
+.form-check-input:checked {
+    background-color: #0a2540;
+    border-color: #0a2540;
 }
 
 .btn {

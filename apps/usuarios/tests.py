@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from apps.core.roles import ADMINISTRADOR
+from apps.core.roles import ADMINISTRADOR, PERSONAL_SEGURIDAD
 from apps.usuarios.models import Rol
 
 
@@ -37,9 +37,45 @@ class UsuariosViewsTests(TestCase):
 
     def test_logout_redirige_al_login(self):
         self.client.login(username='admin', password='Admin12345!')
-        respuesta = self.client.get('/logout/')
+        respuesta = self.client.post('/logout/')
         self.assertEqual(respuesta.status_code, 302)
         self.assertIn('/login/', respuesta.url)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_logout_por_get_no_cierra_la_sesion(self):
+        self.client.login(username='admin', password='Admin12345!')
+        self.assertEqual(self.client.get('/logout/').status_code, 405)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_login_sin_recordarme_termina_al_cerrar_el_navegador(self):
+        self.client.post('/login/', {'username': 'admin', 'password': 'Admin12345!'})
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_login_con_recordarme_mantiene_la_sesion(self):
+        self.client.post('/login/', {
+            'username': 'admin', 'password': 'Admin12345!', 'recordarme': 'on',
+        })
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+
+    def test_menu_muestra_configuracion_solo_al_administrador(self):
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get('/dashboard/'), 'Configuración QR')
+
+        rol_seg = Rol.objects.create(nombre=PERSONAL_SEGURIDAD)
+        guardia = get_user_model().objects.create_user(
+            username='guardia', email='guardia@example.com', cedula='0911111111',
+            password='Guardia12345!', rol=rol_seg,
+        )
+        self.client.force_login(guardia)
+        respuesta = self.client.get('/dashboard/')
+        self.assertNotContains(respuesta, 'Configuración QR')
+        self.assertContains(respuesta, 'Personal Seguridad')
+
+    def test_barra_superior_muestra_fecha_y_buscador_de_placa(self):
+        self.client.force_login(self.user)
+        respuesta = self.client.get('/dashboard/')
+        self.assertContains(respuesta, 'Sistema activo')
+        self.assertContains(respuesta, 'name="q"')
 
     def test_raiz_redirige_segun_sesion(self):
         self.assertIn('/login/', self.client.get('/').url)
@@ -52,3 +88,21 @@ class UsuariosViewsTests(TestCase):
         )
         self.client.force_login(sin_rol)
         self.assertEqual(self.client.get('/vehiculos/').status_code, 403)
+
+
+class IncludesYFiltrosTests(TestCase):
+    def test_iniciales(self):
+        from apps.core.templatetags.ui import iniciales
+        self.assertEqual(iniciales('Juan Carlos Pérez'), 'JC')
+        self.assertEqual(iniciales('admin'), 'A')
+        self.assertEqual(iniciales(''), '?')
+        self.assertEqual(iniciales(None), '?')
+
+    def test_include_placa_y_badge(self):
+        from django.template.loader import render_to_string
+        placa = render_to_string('includes/placa.html', {'placa': 'GSA-3841'})
+        self.assertIn('GSA-3841', placa)
+        self.assertIn('Ecuador', placa)
+        badge = render_to_string('includes/badge_estado.html', {'texto': 'Autorizado', 'tono': 'verde'})
+        self.assertIn('Autorizado', badge)
+        self.assertIn('emerald', badge)
