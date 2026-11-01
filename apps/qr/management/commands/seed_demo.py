@@ -32,6 +32,7 @@ from django.utils import timezone
 from apps.core.roles import PERSONAL_SEGURIDAD
 from apps.propietarios.models import Propietario
 from apps.qr.models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
+from apps.qr.services.validacion import MOTIVOS_POR_ESTADO
 from apps.usuarios.models import Usuario
 from apps.vehiculos.models import Vehiculo
 
@@ -262,7 +263,7 @@ class Command(BaseCommand):
                 motivo = 'Código desactivado' if vehiculo.pk in ya_desactivado else 'Código expirado'
                 ya_desactivado.add(vehiculo.pk)
             elif vehiculo.estado != AUTORIZADO:
-                motivo = f'Vehículo {vehiculo.get_estado_display().lower()}'
+                motivo = MOTIVOS_POR_ESTADO[vehiculo.estado]
             elif not vehiculo.propietario.estado:
                 motivo = 'Propietario inactivo'
 

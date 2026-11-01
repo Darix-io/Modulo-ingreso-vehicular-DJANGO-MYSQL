@@ -98,7 +98,15 @@ class ValidarAccesoTests(TestCase):
         self.validar()
         movimiento = RegistroMovimiento.objects.get()
         self.assertEqual(movimiento.estado, RegistroMovimiento.DENEGADO)
+        self.assertEqual(movimiento.detalle, 'Vehículo suspendido')
         self.assertEqual(HistorialIngreso.objects.count(), 0)
+
+    def test_vehiculo_no_autorizado_dice_exactamente_vehiculo_no_autorizado(self):
+        self.vehiculo.cambiar_estado(Vehiculo.NO_AUTORIZADO)
+        self.client.force_login(self.guardia)
+
+        self.validar()
+        self.assertEqual(RegistroMovimiento.objects.get().detalle, 'Vehículo no autorizado')
 
     def test_propietario_inactivo_es_denegado(self):
         self.propietario.desactivar()
@@ -186,7 +194,7 @@ class SeedDemoTests(TestCase):
         motivos = set(RegistroMovimiento.objects.filter(
             estado=RegistroMovimiento.DENEGADO).values_list('detalle', flat=True))
         permitidos = {'Código expirado', 'Código desactivado', 'Propietario inactivo',
-                      'Vehículo acceso suspendido', 'Vehículo no autorizado'}
+                      'Vehículo suspendido', 'Vehículo no autorizado'}
         self.assertTrue(motivos <= permitidos, motivos - permitidos)
 
     def test_no_duplica_al_ejecutarse_dos_veces(self):

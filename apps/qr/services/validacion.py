@@ -26,6 +26,13 @@ from apps.vehiculos.models import Vehiculo
 from ..models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
 
 
+# Texto del motivo según el estado del vehículo (no se usa get_estado_display: dice "Acceso suspendido")
+MOTIVOS_POR_ESTADO = {
+    Vehiculo.SUSPENDIDO: 'Vehículo suspendido',
+    Vehiculo.NO_AUTORIZADO: 'Vehículo no autorizado',
+}
+
+
 @dataclass
 class ResultadoValidacion:
     """Lo que la vista necesita para mostrar la pantalla de éxito o error."""
@@ -85,7 +92,7 @@ def motivo_de_rechazo(codigo_qr, configuracion):
     if codigo_qr.is_expired:
         return 'Código expirado'
     if vehiculo.estado != Vehiculo.AUTORIZADO:
-        return f'Vehículo {vehiculo.get_estado_display().lower()}'
+        return MOTIVOS_POR_ESTADO.get(vehiculo.estado, 'Vehículo no autorizado')
     if not vehiculo.propietario.estado:
         return 'Propietario inactivo'
     return None
