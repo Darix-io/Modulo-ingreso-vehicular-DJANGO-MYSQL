@@ -6,11 +6,15 @@ from django.views.generic import ListView
 from apps.core.mixins import SeguridadOAdminRequiredMixin
 
 from ..filters import (
-    filtrar_historial, filtrar_movimientos, leer_filtros_movimientos, orden_alterno, orden_seguro)
+    filtrar_historial, filtrar_movimientos, leer_filtros_movimientos, orden_alterno, orden_seguro,
+    parsear_entero, rango_invalido, rangos_rapidos)
 from ..models import RegistroMovimiento
 from ..services.codigos import vigencia_qr
 from ..services.garita import ultimos_accesos
 from ..services.movimientos import contadores_hoy
+from ..services.reportes import guardias_con_ingresos
+
+CLAVES_FILTRO = ('q', 'placa', 'validador', 'fecha_inicio', 'fecha_final')
 from ..services.validacion import validar_acceso, validar_por_placa
 
 
@@ -86,6 +90,11 @@ class HistorialFiltroMixin:
             'orden_vehiculo': orden_alterno(orden, 'vehiculo__placa'),
             'orden_fecha': orden_alterno(orden, 'fecha_ingreso'),
             'orden_validador': orden_alterno(orden, 'usuario_validador__username'),
+            'hay_filtros': any(get.get(clave, '').strip() for clave in CLAVES_FILTRO),
+            'rango_invalido': rango_invalido(get),
+            'rangos_rapidos': rangos_rapidos(),
+            'guardias': guardias_con_ingresos(),
+            'validador_id': parsear_entero(get.get('validador', '').strip()),
             # El paginador ya contó los registros: no se repite la consulta
             'total_registros': context['paginator'].count if context.get('paginator') else 0,
         })
