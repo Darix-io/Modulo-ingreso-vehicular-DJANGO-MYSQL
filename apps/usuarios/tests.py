@@ -20,7 +20,7 @@ class UsuariosViewsTests(TestCase):
         self.assertTrue(self.client.login(username='admin', password='Admin12345!'))
         respuesta = self.client.get('/dashboard/')
         self.assertEqual(respuesta.status_code, 200)
-        self.assertContains(respuesta, 'Panel de Control')
+        self.assertContains(respuesta, 'Panel de control')
 
     def test_login_con_correo_redirige_al_dashboard(self):
         respuesta = self.client.post('/login/', {
@@ -58,8 +58,9 @@ class UsuariosViewsTests(TestCase):
         self.assertFalse(self.client.session.get_expire_at_browser_close())
 
     def test_menu_muestra_configuracion_solo_al_administrador(self):
+        enlace = 'href="/qr/configuracion/"'
         self.client.force_login(self.user)
-        self.assertContains(self.client.get('/dashboard/'), 'Configuración QR')
+        self.assertContains(self.client.get('/dashboard/'), enlace)
 
         rol_seg = Rol.objects.create(nombre=PERSONAL_SEGURIDAD)
         guardia = get_user_model().objects.create_user(
@@ -68,7 +69,7 @@ class UsuariosViewsTests(TestCase):
         )
         self.client.force_login(guardia)
         respuesta = self.client.get('/dashboard/')
-        self.assertNotContains(respuesta, 'Configuración QR')
+        self.assertNotContains(respuesta, enlace)      # ni en el menú ni en el panel
         self.assertContains(respuesta, 'Personal Seguridad')
 
     def test_paginas_no_muestran_comentarios_de_plantilla_ni_texto_suelto(self):

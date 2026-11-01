@@ -13,7 +13,8 @@ python manage.py test                      # pruebas (deben pasar antes de cada 
 python manage.py check
 python manage.py makemigrations --check --dry-run   # no debe detectar cambios pendientes
 python manage.py migrate
-python manage.py seed_roles_users          # roles + usuarios de prueba (admin / seguridad)
+python manage.py seed_roles_users          # roles + usuarios de prueba (admin, seguridad, seguridad2)
+python manage.py seed_demo [--reiniciar]   # datos de demostración de Ecuador (no duplica)
 python manage.py run_qr_maintenance [--renovar]     # expira (y renueva) QR vencidos
 ```
 

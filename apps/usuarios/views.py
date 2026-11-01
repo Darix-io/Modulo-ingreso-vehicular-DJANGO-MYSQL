@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 from django.views.decorators.http import require_POST
 from django.views.generic import TemplateView
 
-from apps.qr.services.estadisticas import resumen_dashboard
+from apps.qr.services.estadisticas import resumen_dashboard, saludo
 
 from .forms import LoginForm
 
@@ -33,6 +33,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(resumen_dashboard())
+        context['saludo'] = saludo()
         return context
 
 
