@@ -10,8 +10,10 @@ Qué crea:
     - Unos 30 días de movimientos e ingresos, repartidos entre los dos guardias.
 
 No duplica datos: si los vehículos de demostración ya existen, no hace nada.
-Con --reiniciar borra SOLO los registros de demostración (por su placa y correo)
-y los vuelve a crear con fechas calculadas desde este momento.
+Con --reset borra SOLO los registros de demostración (por su placa y correo; no
+toca usuarios ni configuración) y los vuelve a crear con fechas relativas a hoy.
+Hay movimientos de HOY entre las 06:00 y la hora actual, con denegados por motivos
+reales (código expirado, vehículo suspendido y propietario inactivo).
 Los nombres y números salen siempre igual (semilla fija); solo las fechas se
 calculan respecto a "hoy".
 
@@ -83,8 +85,11 @@ VEHICULOS = [
 # placa -> días hasta que vence el QR (negativo = ya venció). El resto vence en 8 a 29 días.
 VENCIMIENTO_QR = {
     'GSX-6120': 2, 'GQE-4096': 3, 'GDA-1623': 1,        # por vencer (3 días o menos)
-    'GAD-7712': -4, 'GSB-8841': -9, 'GNB-6419': -2,     # expirados
+    'GAD-7712': -0.1, 'GSB-8841': -9, 'GNB-6419': -2,   # expirados (GAD venció hace unas horas)
 }
+
+# Vehículos que hoy tendrán un intento denegado: QR expirado, suspendido y propietario inactivo
+PLACAS_DENEGADAS_HOY = ('GAD-7712', 'GBA-9452', 'GLC-3902')
 
 # Peso de cada hora del día (picos a las 8 y a las 17)
 PESO_POR_HORA = {6: 1, 7: 5, 8: 8, 9: 5, 10: 3, 11: 2, 12: 3, 13: 3, 14: 2, 15: 2, 16: 3, 17: 6, 18: 5}
@@ -110,8 +115,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--reiniciar', action='store_true',
-            help='Borra los datos de demostración y los vuelve a crear con fechas de hoy.',
+            '--reset', '--reiniciar', dest='reset', action='store_true',
+            help='Borra solo los datos de demostración y los vuelve a crear con fechas de hoy.',
         )
 
     @transaction.atomic
@@ -119,7 +124,7 @@ class Command(BaseCommand):
         rng = random.Random(2024)
         ahora = timezone.localtime()
 
-        if options['reiniciar']:
+        if options['reset']:
             self._borrar_demo()
 
         call_command('seed_roles_users', stdout=io.StringIO())    # los guardias deben existir
@@ -146,7 +151,10 @@ class Command(BaseCommand):
     @staticmethod
     def _borrar_demo():
         """Borra solo lo que creó este comando (los QR y movimientos se borran en cascada)."""
-        Vehiculo.objects.filter(placa__in=[datos[0] for datos in VEHICULOS]).delete()
+        placas = [datos[0] for datos in VEHICULOS]
+        for codigo in CodigoQR.objects.filter(vehiculo__placa__in=placas):
+            codigo.imagen.delete(save=False)         # también el archivo PNG
+        Vehiculo.objects.filter(placa__in=placas).delete()
         Propietario.objects.filter(correo__in=[datos[3] for datos in PROPIETARIOS]).delete()
 
     # ---------------------------------------------------------------- propietarios
@@ -212,17 +220,14 @@ class Command(BaseCommand):
         pesos = [10 if v.estado == AUTORIZADO and v.propietario.estado else 1.3 for v in vehiculos]
 
         eventos = []
-        for atras in range(DIAS_DE_MOVIMIENTOS, -1, -1):
+        for atras in range(DIAS_DE_MOVIMIENTOS, 0, -1):
             dia = ahora.date() - timedelta(days=atras)
             cantidad = {5: rng.randint(5, 8), 6: rng.randint(1, 3)}.get(dia.weekday(), rng.randint(12, 18))
             for _ in range(cantidad):
                 hora = rng.choices(list(PESO_POR_HORA), weights=list(PESO_POR_HORA.values()))[0]
-                hora_exacta = time(hora, rng.randint(0, 59), rng.randint(0, 59))
-                momento = timezone.make_aware(datetime.combine(dia, hora_exacta))
-                vehiculo = rng.choices(vehiculos, weights=pesos)[0]
-                azar = rng.random()
-                if momento < ahora:           # nada en el futuro
-                    eventos.append((momento, vehiculo, azar))
+                momento = timezone.make_aware(datetime.combine(dia, time(hora, rng.randint(0, 59), rng.randint(0, 59))))
+                eventos.append((momento, rng.choices(vehiculos, weights=pesos)[0], rng.random()))
+        eventos.extend(self._eventos_de_hoy(rng, vehiculos, pesos, ahora))
         eventos.sort(key=lambda evento: evento[0])
 
         ultimo_tipo = {}          # vehículo -> último movimiento AUTORIZADO (para alternar)
@@ -265,6 +270,37 @@ class Command(BaseCommand):
             RegistroMovimiento.objects.filter(pk=movimiento.pk).update(fecha=momento)
             total += 1
         return total
+
+    @staticmethod
+    def _eventos_de_hoy(rng, vehiculos, pesos, ahora):
+        """
+        Movimientos de HOY entre las 06:00 y la hora actual (nunca en el futuro).
+        Para la demostración, hoy siempre tiene actividad normal aunque sea domingo, y
+        además tres intentos denegados con motivos reales: QR expirado, vehículo
+        suspendido y propietario inactivo.
+        """
+        inicio = ahora.replace(hour=6, minute=0, second=0, microsecond=0)
+        if ahora < inicio + timedelta(minutes=15):
+            return []        # todavía no abre la jornada: no hay nada que mostrar
+
+        segundos = int((ahora - inicio).total_seconds())
+        fraccion = min(1, segundos / (13 * 3600))             # avance de la jornada 06:00-19:00
+        eventos = []
+        for _ in range(max(3, round(rng.randint(12, 18) * fraccion))):
+            momento = inicio + timedelta(seconds=rng.randint(0, segundos - 1))
+            eventos.append((momento, rng.choices(vehiculos, weights=pesos)[0], rng.random()))
+
+        por_placa = {vehiculo.placa: vehiculo for vehiculo in vehiculos}
+        for placa in PLACAS_DENEGADAS_HOY:
+            desde = inicio
+            if placa in VENCIMIENTO_QR:    # su QR vence hoy: el intento debe ser DESPUÉS de vencer
+                vence = ahora + timedelta(days=VENCIMIENTO_QR[placa]) - timedelta(hours=1)
+                desde = max(inicio, vence) + timedelta(minutes=1)
+            if desde >= ahora:
+                continue
+            momento = desde + timedelta(seconds=rng.randint(0, int((ahora - desde).total_seconds()) - 1))
+            eventos.append((momento, por_placa[placa], rng.random()))
+        return eventos
 
     @staticmethod
     def _elegir_guardia(guardias, momento, azar):

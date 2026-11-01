@@ -298,3 +298,84 @@ class ResumenDashboardTests(TestCase):
             username='adm', email='adm@example.com', cedula='0900000002', password='Clave12345!', rol=rol)
         self.client.force_login(admin)
         self.assertContains(self.client.get('/dashboard/'), 'Ajustar parámetros')
+
+
+class SeedDemoHoyTests(TestCase):
+    """Movimientos de HOY de la demostración (con una hora simulada, no la del reloj)."""
+
+    def _ahora_simulada(self, hora, minuto=0):
+        return timezone.make_aware(datetime.combine(timezone.localdate(), dtime(hora, minuto)))
+
+    def _vehiculos(self):
+        from types import SimpleNamespace
+        from apps.qr.management.commands.seed_demo import VEHICULOS
+        vehiculos = [SimpleNamespace(placa=datos[0]) for datos in VEHICULOS]
+        return vehiculos, [1] * len(vehiculos)
+
+    def test_hoy_va_de_las_6_hasta_la_hora_actual_sin_futuro(self):
+        import random
+        from apps.qr.management.commands.seed_demo import Command
+        ahora = self._ahora_simulada(15)
+        vehiculos, pesos = self._vehiculos()
+        eventos = Command._eventos_de_hoy(random.Random(1), vehiculos, pesos, ahora)
+        self.assertGreaterEqual(len(eventos), 6)
+        for momento, _vehiculo, _azar in eventos:
+            self.assertGreaterEqual(momento, self._ahora_simulada(6))
+            self.assertLess(momento, ahora)
+
+    def test_hoy_incluye_los_tres_denegados_con_motivos_reales(self):
+        import random
+        from apps.qr.management.commands.seed_demo import Command, PLACAS_DENEGADAS_HOY
+        ahora = self._ahora_simulada(15)
+        vehiculos, pesos = self._vehiculos()
+        eventos = Command._eventos_de_hoy(random.Random(1), vehiculos, pesos, ahora)
+        placas = {vehiculo.placa for _m, vehiculo, _a in eventos}
+        self.assertTrue(set(PLACAS_DENEGADAS_HOY) <= placas)
+        # el QR de GAD-7712 vence hoy hacia las 11:36: su intento tiene que ser posterior
+        intentos_gad = [m for m, v, _a in eventos if v.placa == 'GAD-7712']
+        self.assertTrue(any(m > self._ahora_simulada(11, 36) for m in intentos_gad))
+
+    def test_antes_de_abrir_la_jornada_no_hay_movimientos_de_hoy(self):
+        import random
+        from apps.qr.management.commands.seed_demo import Command
+        vehiculos, pesos = self._vehiculos()
+        self.assertEqual(Command._eventos_de_hoy(random.Random(1), vehiculos, pesos, self._ahora_simulada(5, 30)), [])
+        self.assertEqual(Command._eventos_de_hoy(random.Random(1), vehiculos, pesos, self._ahora_simulada(6, 10)), [])
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class SeedDemoResetTests(TestCase):
+
+    def test_reset_recrea_solo_los_datos_de_demostracion(self):
+        call_command('seed_demo', stdout=StringIO())
+        propio = Propietario.objects.create(
+            nombre='Persona Real', numero_identidad='0999999999', celular='0990000000',
+            correo='real@unemi.edu.ec', tipo='Docente')
+        vehiculo_propio = Vehiculo.objects.create(
+            propietario=propio, placa='ZZZ-0001', marca='Kia', modelo='Rio', color='Gris')
+        config = ConfiguracionQR.get_solo()
+        config.expiration_days = 45
+        config.save()
+        usuarios = Usuario.objects.count()
+
+        salida = StringIO()
+        call_command('seed_demo', '--reset', stdout=salida)
+
+        self.assertIn('Demo lista', salida.getvalue())
+        self.assertEqual(Propietario.objects.count(), 16)       # 15 de demostración + el real
+        self.assertEqual(Vehiculo.objects.count(), 21)
+        self.assertTrue(Vehiculo.objects.filter(pk=vehiculo_propio.pk).exists())
+        self.assertEqual(Usuario.objects.count(), usuarios)     # usuarios intactos
+        self.assertEqual(ConfiguracionQR.get_solo().expiration_days, 45)   # configuración intacta
+        self.assertGreater(RegistroMovimiento.objects.count(), 100)
+
+    def test_reset_sin_datos_previos_tambien_funciona(self):
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        self.assertEqual(Vehiculo.objects.count(), 20)
+
+    def test_reset_deja_qr_de_demostracion_con_estados_esperados(self):
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        ahora = timezone.now()
+        self.assertEqual(CodigoQR.objects.count(), 20)
+        self.assertEqual(CodigoQR.objects.filter(fecha_expiracion__lte=ahora).count(), 3)
