@@ -100,10 +100,12 @@ def motivo_de_rechazo(codigo_qr, configuracion):
 
     if not configuracion.activar_qr:
         return 'Validación de QR deshabilitada'
-    if not codigo_qr.activo:
-        return 'Código desactivado'
+    # Un QR vencido se marca inactivo solo: si ya expiró, el motivo real es la expiración;
+    # "desactivado" es solo para el que se desactivó sin haber expirado.
     if codigo_qr.is_expired:
         return 'Código expirado'
+    if not codigo_qr.activo:
+        return 'Código desactivado'
     if vehiculo.estado != Vehiculo.AUTORIZADO:
         return MOTIVOS_POR_ESTADO.get(vehiculo.estado, 'Vehículo no autorizado')
     if not vehiculo.propietario.estado:

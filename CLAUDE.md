@@ -63,8 +63,8 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 **Un vehículo puede ingresar solo si se cumplen TODAS** (`services/validacion.py`,
 `motivo_de_rechazo`, en este orden):
 1. Validación de QR activada (`ConfiguracionQR.activar_qr`).
-2. `CodigoQR.activo` es True.
-3. El código no ha expirado (`is_expired`).
+2. El código no ha expirado (`is_expired`). Si además está inactivo, el motivo es «Código expirado».
+3. `CodigoQR.activo` es True («Código desactivado» solo si se desactivó sin haber expirado).
 4. `Vehiculo.estado == AUTORIZADO` (suspendido o no autorizado → denegado).
 5. `Propietario.estado` activo.
 6. Quien valida inició sesión como Seguridad o Administrador (lo exige la vista).

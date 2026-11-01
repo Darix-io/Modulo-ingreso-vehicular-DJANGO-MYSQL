@@ -110,6 +110,21 @@ class ValidarPorPlacaServicioTests(BaseValidarTests):
                 desde_cero(preparar)
                 self.assertEqual(validar_acceso(str(self.codigo.contenido), self.guardia).mensaje, motivo)
 
+    def test_inactivo_y_expirado_dice_expirado_y_desactivado_solo_si_no_expiro(self):
+        from apps.qr.services.validacion import motivo_de_rechazo
+        configuracion = ConfiguracionQR.get_solo()
+        CodigoQR.objects.filter(pk=self.codigo.pk).update(
+            activo=False, fecha_expiracion=timezone.now() - timedelta(days=3))
+        self.codigo.refresh_from_db()
+        self.assertEqual(motivo_de_rechazo(self.codigo, configuracion), 'Código expirado')
+        self.assertEqual(validar_por_placa('GSA-3841', self.guardia).mensaje, 'Código expirado')
+        self.assertEqual(validar_acceso(str(self.codigo.contenido), self.guardia).mensaje, 'Código expirado')
+
+        CodigoQR.objects.filter(pk=self.codigo.pk).update(
+            activo=False, fecha_expiracion=timezone.now() + timedelta(days=10))
+        self.codigo.refresh_from_db()
+        self.assertEqual(motivo_de_rechazo(self.codigo, configuracion), 'Código desactivado')
+
     def test_validacion_de_qr_deshabilitada_tambien_deniega_por_placa(self):
         configuracion = ConfiguracionQR.get_solo()
         configuracion.activar_qr = False
@@ -211,7 +226,7 @@ class ResultadoAutorizadoTests(BaseValidarTests):
         movimiento = RegistroMovimiento.objects.get()
         hora = timezone.localtime(movimiento.fecha).strftime('%H:%M:%S')
         for texto in ('Ingreso autorizado', 'GSA-3841', 'Toyota Hilux', 'Blanco', '2022', 'Ana Mora Vera',
-                      '0912345678', 'Docente', 'Validó: Víctor Morán', hora, 'Validación manual por placa',
+                      '0912345678', 'Docente', 'Registrado por: Víctor Morán', hora, 'Validación manual por placa',
                       'Validar otro vehículo', 'Volver al menú', 'día', 'restante'):
             self.assertContains(respuesta, texto)
         self.assertContains(respuesta, reverse('qr:detalle', args=[self.codigo.pk]))
@@ -245,7 +260,7 @@ class ResultadoDenegadoTests(BaseValidarTests):
         respuesta = self.client.get(reverse('qr:validar'), {'token': str(self.codigo.contenido)})
         self.assertTemplateUsed(respuesta, 'qr/validar_failure.html')
         for texto in ('Acceso denegado', 'Causa del rechazo', 'Vehículo suspendido', 'GSA-3841', 'Toyota Hilux',
-                      'Ana Mora Vera', 'Suspendido', 'Validó: Víctor Morán', 'Validar otro vehículo',
+                      'Ana Mora Vera', 'Suspendido', 'Registrado por: Víctor Morán', 'Validar otro vehículo',
                       'Intento de ingreso'):
             self.assertContains(respuesta, texto)
         self.assertNotContains(respuesta, 'Vehículo acceso suspendido')

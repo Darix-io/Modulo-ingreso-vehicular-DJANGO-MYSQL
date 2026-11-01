@@ -247,7 +247,6 @@ class Command(BaseCommand):
         eventos.sort(key=lambda evento: evento[0])
 
         ultimo_tipo = {}          # vehículo -> último movimiento AUTORIZADO (para alternar)
-        ya_desactivado = set()    # QR que ya se marcó inactivo al vencer
         total = 0
         for momento, vehiculo, azar in eventos:
             if momento < vehiculo.fecha_registro:      # aún no estaba registrado
@@ -260,8 +259,7 @@ class Command(BaseCommand):
             # Mismas reglas y mismo orden que services/validacion.py
             motivo = None
             if qr.fecha_expiracion <= momento:
-                motivo = 'Código desactivado' if vehiculo.pk in ya_desactivado else 'Código expirado'
-                ya_desactivado.add(vehiculo.pk)
+                motivo = 'Código expirado'
             elif vehiculo.estado != AUTORIZADO:
                 motivo = MOTIVOS_POR_ESTADO[vehiculo.estado]
             elif not vehiculo.propietario.estado:

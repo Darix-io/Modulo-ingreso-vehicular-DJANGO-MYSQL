@@ -26,7 +26,7 @@
         <p class="mt-4 font-mono text-sm text-red-50">
             {{ resultado.fecha|date:"l, j \d\e F \d\e Y" }} · <span class="font-bold">{{ resultado.fecha|date:"H:i:s" }}</span>
         </p>
-        <p class="mt-1 text-sm text-red-100">Validó: {{ user.get_full_name|default:user.username }}</p>
+        <p class="mt-1 text-sm text-red-100">Registrado por: {{ user.get_full_name|default:user.username }}</p>
     </section>
 
     {% if resultado.vehiculo %}
