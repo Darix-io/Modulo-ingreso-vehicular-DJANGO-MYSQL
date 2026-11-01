@@ -140,7 +140,7 @@
                 <a href="{% url 'qr:configuracion_qr' %}" class="flex items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left no-underline hover:no-underline {% if nombre == 'configuracion_qr' %}bg-brand-primary text-white hover:text-white{% else %}text-slate-600 hover:bg-slate-100 hover:text-slate-900{% endif %}">
                     <span class="material-symbols-outlined text-[20px]">settings</span>
                     <span class="min-w-0 flex-1 whitespace-nowrap">Configuración QR</span>
-                    <span class="shrink-0 rounded bg-secondary-container/20 px-1 py-px text-[9px] font-bold uppercase text-amber-700">Admin</span>
+                    <span class="shrink-0 rounded {% if nombre == 'configuracion_qr' %}bg-white/20 text-amber-200{% else %}bg-secondary-container/20 text-amber-700{% endif %} px-1 py-px text-[9px] font-bold uppercase">Admin</span>
                 </a>
                 {% endif %}
             </nav>

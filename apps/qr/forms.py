@@ -28,5 +28,10 @@ class ConfiguracionQRForm(forms.ModelForm):
             'renovacion_automatica': forms.CheckboxInput(attrs={'class': CLASES_INTERRUPTOR}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El campo numérico del modelo pone min=0 por su cuenta; aquí se fijan los límites reales
+        self.fields['expiration_days'].widget.attrs.update(min=DIAS_MINIMO, max=DIAS_MAXIMO)
+
     def clean_expiration_days(self):
         return validar_dias_vigencia(self.cleaned_data.get('expiration_days'))

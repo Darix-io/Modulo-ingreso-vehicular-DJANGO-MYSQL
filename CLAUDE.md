@@ -15,7 +15,7 @@ python manage.py makemigrations --check --dry-run   # no debe detectar cambios p
 python manage.py migrate
 python manage.py seed_roles_users          # roles + usuarios de prueba (admin, seguridad, seguridad2)
 python manage.py seed_demo [--reiniciar]   # datos de demostración de Ecuador (no duplica)
-python manage.py run_qr_maintenance [--renovar]     # expira (y renueva) QR vencidos
+python manage.py run_qr_maintenance [--renovar]     # expira QR vencidos; renueva si Configuración QR tiene renovación automática (o con --renovar)
 ```
 
 - `manage.py` usa `config.settings.dev`; `wsgi.py`/`asgi.py` usan `config.settings.prod`.
@@ -96,6 +96,10 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 - Un QR vencido se marca inactivo. Cada vehículo tiene un único `CodigoQR` (OneToOne), creado
   por señal al registrar el vehículo. `ConfiguracionQR` es un registro único (`get_solo()`, id=1).
 - `renovar()` genera nuevo token + imagen y reinicia la expiración.
+- **Configuración QR** (solo administrador, 403 para Seguridad; el menú también la oculta): validación activada, días de
+  vigencia (1–365, `validadores.py`; aplica a los QR que se creen o renueven desde ahora) y renovación automática. Esta
+  la ejecuta `run_qr_maintenance` (`services/mantenimiento.py`): renueva solo vehículos AUTORIZADOS con propietario activo.
+  `permitir_reutilizacion` existe en el modelo pero ninguna regla lo aplica: no se muestra ni se usa.
 
 ## Convenciones
 
