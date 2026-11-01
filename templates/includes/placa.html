@@ -1,5 +1,8 @@
-{# Placa ecuatoriana. Uso: {% include 'includes/placa.html' with placa=vehiculo.placa %} #}
-<span class="inline-flex flex-col overflow-hidden rounded-md border border-slate-300 bg-white text-center shadow-sm">
-    <span class="bg-brand-primary px-3 py-px text-[8px] font-bold uppercase tracking-[0.2em] text-white">Ecuador</span>
-    <span class="px-3 py-0.5 font-mono text-sm font-bold tracking-[0.12em] text-brand-neutral">{{ placa }}</span>
+{% comment %}
+Placa ecuatoriana. Uso: include 'includes/placa.html' con placa=vehiculo.placa
+Opciones: grande=True (para vistas previas) e id_texto='miId' (para actualizarla con JavaScript).
+{% endcomment %}
+<span class="inline-flex flex-col overflow-hidden rounded-md border border-slate-300 bg-white text-center shadow-sm {% if grande %}w-72 max-w-full rounded-lg border-2 border-brand-primary{% endif %}">
+    <span class="bg-brand-primary font-bold uppercase text-white {% if grande %}py-1 text-xs tracking-[0.35em]{% else %}px-3 py-px text-[8px] tracking-[0.2em]{% endif %}">Ecuador</span>
+    <span {% if id_texto %}id="{{ id_texto }}"{% endif %} class="font-mono font-bold text-brand-neutral {% if grande %}whitespace-nowrap px-4 py-3 text-3xl tracking-[0.12em]{% else %}px-3 py-0.5 text-sm tracking-[0.12em]{% endif %}">{{ placa }}</span>
 </span>

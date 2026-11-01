@@ -3,6 +3,7 @@ import re
 from django import forms
 from django.core.exceptions import ValidationError
 
+from apps.core.estilos import CLASES_INPUT, CLASES_INPUT_MONO, CLASES_SELECT, CLASES_TEXTAREA
 from apps.propietarios.models import Propietario
 
 from .models import Vehiculo
@@ -10,19 +11,40 @@ from .models import Vehiculo
 PATRON_PLACA = re.compile(r'^[A-Z0-9-]+$')
 
 
+class PropietarioChoiceField(forms.ModelChoiceField):
+    """Muestra 'Nombre · cédula (tipo)' en el selector."""
+
+    def label_from_instance(self, propietario):
+        return f'{propietario.nombre} · {propietario.numero_identidad} ({propietario.tipo})'
+
+
 class VehiculoForm(forms.ModelForm):
+    propietario = PropietarioChoiceField(
+        queryset=Propietario.objects.none(),
+        empty_label='Selecciona un propietario',
+        label='Propietario',
+        widget=forms.Select(attrs={'class': CLASES_SELECT}),
+    )
+
     class Meta:
         model = Vehiculo
         fields = ['propietario', 'placa', 'marca', 'modelo', 'color', 'anio', 'estado', 'observaciones']
+        labels = {
+            'placa': 'Placa',
+            'anio': 'Año',
+            'estado': 'Estado de acceso',
+        }
         widgets = {
-            'propietario': forms.Select(attrs={'class': 'form-select'}),
-            'placa': forms.TextInput(attrs={'class': 'form-control text-uppercase', 'placeholder': 'Ej: ABC-1234'}),
-            'marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Chevrolet'}),
-            'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Aveo'}),
-            'color': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Rojo'}),
-            'anio': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej: 2020'}),
-            'estado': forms.Select(attrs={'class': 'form-select'}),
-            'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Opcional...'}),
+            'placa': forms.TextInput(attrs={
+                'class': CLASES_INPUT_MONO + ' uppercase', 'placeholder': 'GSA-3841',
+                'maxlength': 20, 'autocomplete': 'off', 'autofocus': True,
+            }),
+            'marca': forms.TextInput(attrs={'class': CLASES_INPUT, 'placeholder': 'Ej: Chevrolet'}),
+            'modelo': forms.TextInput(attrs={'class': CLASES_INPUT, 'placeholder': 'Ej: Aveo'}),
+            'color': forms.TextInput(attrs={'class': CLASES_INPUT, 'placeholder': 'Ej: Rojo'}),
+            'anio': forms.NumberInput(attrs={'class': CLASES_INPUT, 'placeholder': 'Ej: 2020', 'min': 1900, 'max': 2100}),
+            'estado': forms.Select(attrs={'class': CLASES_SELECT}),
+            'observaciones': forms.Textarea(attrs={'class': CLASES_TEXTAREA, 'rows': 3, 'placeholder': 'Opcional…'}),
         }
         error_messages = {
             'placa': {'unique': 'Ya existe un vehículo con esta placa.'},

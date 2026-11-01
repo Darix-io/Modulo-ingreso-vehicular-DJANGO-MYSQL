@@ -1,14 +1,16 @@
 from django.contrib import messages
-from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
 from apps.core.mixins import AdminRequiredMixin, SeguridadOAdminRequiredMixin
+from apps.propietarios.models import Propietario
 
+from .filters import contadores_por_estado, filtrar_vehiculos, leer_filtros
 from .forms import VehiculoForm
 from .models import Vehiculo
+from .services import resumen_eliminacion
 
 
 class VehiculoListView(SeguridadOAdminRequiredMixin, ListView):
@@ -17,37 +19,32 @@ class VehiculoListView(SeguridadOAdminRequiredMixin, ListView):
     context_object_name = 'vehiculos'
     paginate_by = 10
 
-    # Valor que llega en la URL (?estado=...) -> valor guardado en la BD
-    ESTADOS_URL = {
-        'autorizado': Vehiculo.AUTORIZADO,
-        'no_autorizado': Vehiculo.NO_AUTORIZADO,
-        'suspendido': Vehiculo.SUSPENDIDO,
-    }
-
     def get_queryset(self):
-        queryset = Vehiculo.objects.select_related('propietario')
-        query = self.request.GET.get('q', '').strip()
-        estado = self.request.GET.get('estado', '').strip().lower()
-
-        if query:
-            queryset = queryset.filter(
-                Q(placa__icontains=query)
-                | Q(propietario__nombre__icontains=query)
-                | Q(propietario__numero_identidad__icontains=query)
-            )
-        if estado in self.ESTADOS_URL:
-            queryset = queryset.filter(estado=self.ESTADOS_URL[estado])
-
-        return queryset
+        return filtrar_vehiculos(leer_filtros(self.request.GET))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['search_query'] = self.request.GET.get('q', '').strip()
-        context['estado_filter'] = self.request.GET.get('estado', '').strip().lower()
+        filtros = leer_filtros(self.request.GET)
+        context.update({
+            'search_query': filtros['q'],
+            'estado_filter': filtros['estado'],
+            'contadores': contadores_por_estado(filtros),
+            'total_registros': Vehiculo.objects.count(),
+        })
         return context
 
 
-class VehiculoCreateView(AdminRequiredMixin, CreateView):
+class VehiculoFormMixin:
+    """Datos extra que necesita la pantalla del formulario."""
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Sin propietarios activos no se puede registrar un vehículo: la pantalla lo explica
+        context['hay_propietarios'] = Propietario.objects.filter(estado=True).exists()
+        return context
+
+
+class VehiculoCreateView(AdminRequiredMixin, VehiculoFormMixin, CreateView):
     model = Vehiculo
     form_class = VehiculoForm
     template_name = 'vehiculos/vehiculo_form.html'
@@ -59,7 +56,7 @@ class VehiculoCreateView(AdminRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class VehiculoUpdateView(AdminRequiredMixin, UpdateView):
+class VehiculoUpdateView(AdminRequiredMixin, VehiculoFormMixin, UpdateView):
     model = Vehiculo
     form_class = VehiculoForm
     template_name = 'vehiculos/vehiculo_form.html'
@@ -75,7 +72,16 @@ class VehiculoDeleteView(AdminRequiredMixin, DeleteView):
     template_name = 'vehiculos/vehiculo_confirm_delete.html'
     success_url = reverse_lazy('vehiculos:lista')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['resumen'] = resumen_eliminacion(self.object)
+        return context
+
     def form_valid(self, form):
+        # Borrar es irreversible: además del botón deshabilitado en pantalla, se exige aquí
+        if not self.request.POST.get('confirmo'):
+            messages.error(self.request, 'Marca la casilla de confirmación para eliminar el vehículo.')
+            return redirect('vehiculos:eliminar', pk=self.object.pk)
         messages.warning(self.request, 'Vehículo eliminado del sistema.')
         return super().form_valid(form)
 

@@ -1,56 +1,117 @@
 {% extends 'base.html' %}
-{% block title %}Registrar Vehículo - Sistema QR{% endblock %}
-{% block content %}
-<div class="page-shell">
-    <section class="page-header">
-        <div>
-            <h2 class="page-title"><i class="fa-solid fa-car"></i> Formulario de Vehículo</h2>
-            <p class="page-subtitle">Registro y actualización del perfil del vehículo y su acceso.</p>
-        </div>
-    </section>
 
-    <section class="panel-shell p-4 p-lg-5">
-        <form method="POST">
-            {% csrf_token %}
-            <div class="row">
-                <div class="col-md-12 mb-3">
-                    <label class="form-label fw-bold text-success">Propietario Asignado</label>
-                    {{ form.propietario }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Placa</label>
-                    {{ form.placa }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Marca</label>
-                    {{ form.marca }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Modelo</label>
-                    {{ form.modelo }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Color</label>
-                    {{ form.color }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Año</label>
-                    {{ form.anio }}
-                </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label fw-bold">Estado Acceso</label>
-                    {{ form.estado }}
-                </div>
-                <div class="col-md-12 mb-4">
-                    <label class="form-label fw-bold">Observaciones</label>
-                    {{ form.observaciones }}
+{% block title %}{% if form.instance.pk %}Editar vehículo{% else %}Registrar vehículo{% endif %}{% endblock %}
+
+{# Pantalla rediseñada: ya no necesita Bootstrap #}
+{% block legacy_css %}{% endblock %}
+{% block legacy_js %}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+
+    <a href="{% url 'vehiculos:lista' %}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-tertiary no-underline hover:underline">
+        <span class="material-symbols-outlined text-lg">arrow_back</span>Volver a vehículos
+    </a>
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
+        <header class="bg-brand-primary px-6 py-5 text-white lg:px-8">
+            <div class="flex items-center gap-3">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-secondary-container text-brand-neutral"><span class="material-symbols-outlined">directions_car</span></span>
+                <div>
+                    <h1 class="font-headline text-xl font-bold">{% if form.instance.pk %}Editar vehículo {{ form.instance.placa }}{% else %}Registrar nuevo vehículo{% endif %}</h1>
+                    <p class="text-sm text-white/70">{% if form.instance.pk %}Actualiza los datos y el estado de acceso.{% else %}Formulario de registro y vinculación con su propietario.{% endif %}</p>
                 </div>
             </div>
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{% url 'vehiculos:lista' %}" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Guardar Vehículo</button>
+        </header>
+
+        <form method="post" novalidate class="px-6 py-6 lg:px-8">
+            {% csrf_token %}
+
+            {% if not form.instance.pk %}
+            <div class="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                <span class="material-symbols-outlined text-2xl text-emerald-600">qr_code_2</span>
+                <p><strong class="font-semibold">Código QR automático.</strong> Al guardar, el sistema genera de inmediato el código QR único de este vehículo.</p>
+            </div>
+            {% endif %}
+
+            {% if not hay_propietarios %}
+            <div class="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900" role="alert">
+                <span class="material-symbols-outlined text-2xl text-amber-600">warning</span>
+                <p>No hay propietarios activos para asignar. <a href="{% url 'propietarios:crear' %}" class="font-semibold text-brand-tertiary">Registra un propietario</a> o activa uno existente.</p>
+            </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            <div class="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                <span class="material-symbols-outlined text-lg">error</span>
+                <div>{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-5">
+                {# Columna de datos #}
+                <div class="space-y-5 lg:col-span-3">
+                    {% include 'includes/campo_form.html' with campo=form.propietario icono='badge' ayuda='Solo aparecen propietarios activos.' %}
+                    {% include 'includes/campo_form.html' with campo=form.placa icono='pin' ayuda='Formato ecuatoriano, por ejemplo GSA-3841.' %}
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        {% include 'includes/campo_form.html' with campo=form.marca icono='directions_car' %}
+                        {% include 'includes/campo_form.html' with campo=form.modelo icono='sell' %}
+                    </div>
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                        {% include 'includes/campo_form.html' with campo=form.color icono='palette' %}
+                        {% include 'includes/campo_form.html' with campo=form.anio icono='calendar_month' %}
+                    </div>
+                    {% include 'includes/campo_form.html' with campo=form.estado icono='verified_user' %}
+                    {% include 'includes/campo_form.html' with campo=form.observaciones %}
+                </div>
+
+                {# Vista previa #}
+                <aside class="lg:col-span-2">
+                    <div class="sticky top-24 space-y-4 rounded-2xl bg-surface-container-low p-5">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Vista previa de la placa</p>
+                        <div class="flex flex-col items-center gap-3 rounded-xl bg-white px-4 py-8 shadow-sm" aria-live="polite">
+                            {% include 'includes/placa.html' with placa=form.placa.value|default:'ABC-1234'|upper grande=True id_texto='placaVista' %}
+                            <p id="resumenVista" class="text-center text-sm text-slate-500"></p>
+                        </div>
+                        <p class="text-xs text-slate-500">Así se verá la placa en las listas, el panel y la credencial QR.</p>
+                    </div>
+                </aside>
+            </div>
+
+            <div class="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                <a href="{% url 'vehiculos:lista' %}" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 no-underline hover:bg-slate-50">Cancelar</a>
+                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary">
+                    <span class="material-symbols-outlined text-xl text-secondary-container">{% if form.instance.pk %}save{% else %}qr_code_2{% endif %}</span>
+                    {% if form.instance.pk %}Guardar cambios{% else %}Guardar y generar QR{% endif %}
+                </button>
             </div>
         </form>
     </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // La placa de ejemplo se ve atenuada hasta que se escribe la real
+    const campoPlaca = document.getElementById('{{ form.placa.id_for_label }}');
+    const placaVista = document.getElementById('placaVista');
+    const resumen = document.getElementById('resumenVista');
+    const campos = ['marca', 'modelo', 'color', 'anio'].map((n) => document.getElementById('id_' + n));
+
+    function actualizarVista() {
+        const texto = campoPlaca.value.trim().toUpperCase();
+        placaVista.textContent = texto || 'ABC-1234';
+        placaVista.classList.toggle('opacity-40', !texto);
+        const partes = campos.map((c) => c.value.trim()).filter(Boolean);
+        resumen.textContent = partes.join(' · ');
+    }
+    campoPlaca.addEventListener('input', () => {
+        const pos = campoPlaca.selectionStart;
+        campoPlaca.value = campoPlaca.value.toUpperCase();      // se escribe en mayúsculas
+        campoPlaca.setSelectionRange(pos, pos);
+        actualizarVista();
+    });
+    campos.forEach((c) => c.addEventListener('input', actualizarVista));
+    actualizarVista();
+</script>
 {% endblock %}
