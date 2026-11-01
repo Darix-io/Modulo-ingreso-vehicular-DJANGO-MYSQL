@@ -148,7 +148,8 @@ class PermisosVehiculosTests(BaseVehiculosTests):
         self.assertEqual(respuesta.status_code, 200)
         self.assertContains(respuesta, 'GAA-1111')
         self.assertContains(respuesta, '/qr/detalle/')        # sí puede ver el QR
-        for oculto in ('Registrar vehículo', '/vehiculos/editar/', '/vehiculos/eliminar/', '/vehiculos/nuevo/'):
+        for oculto in ('Registrar vehículo', '/vehiculos/editar/', '/vehiculos/eliminar/', '/vehiculos/nuevo/',
+                       '/vehiculos/activar/', '/vehiculos/desactivar/'):
             self.assertNotContains(respuesta, oculto)
 
     def test_seguridad_recibe_403_al_intentar_crear_editar_o_eliminar(self):
@@ -159,6 +160,23 @@ class PermisosVehiculosTests(BaseVehiculosTests):
         self.assertEqual(self.client.post(reverse('vehiculos:eliminar', args=[self.v.pk]), {'confirmo': 'on'}).status_code, 403)
         self.assertTrue(Vehiculo.objects.filter(pk=self.v.pk).exists())
         self.assertFalse(Vehiculo.objects.filter(placa='GNN-0001').exists())
+
+    def test_seguridad_no_puede_autorizar_ni_quitar_la_autorizacion(self):
+        sospechoso = self.vehiculo('GBB-2222', Vehiculo.NO_AUTORIZADO)
+        self.client.force_login(self.guardia)
+        self.assertEqual(self.client.post(reverse('vehiculos:activar', args=[sospechoso.pk])).status_code, 403)
+        self.assertEqual(self.client.post(reverse('vehiculos:desactivar', args=[self.v.pk])).status_code, 403)
+        sospechoso.refresh_from_db()
+        self.v.refresh_from_db()
+        self.assertEqual(sospechoso.estado, Vehiculo.NO_AUTORIZADO)    # sigue igual
+        self.assertEqual(self.v.estado, Vehiculo.AUTORIZADO)           # sigue igual
+
+    def test_administrador_ve_los_botones_de_autorizacion(self):
+        self.vehiculo('GBB-2222', Vehiculo.SUSPENDIDO)
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse('vehiculos:lista'))
+        self.assertContains(respuesta, '/vehiculos/activar/')
+        self.assertContains(respuesta, '/vehiculos/desactivar/')
 
     def test_activar_y_desactivar_solo_por_post(self):
         self.client.force_login(self.admin)

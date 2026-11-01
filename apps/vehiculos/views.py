@@ -86,7 +86,8 @@ class VehiculoDeleteView(AdminRequiredMixin, DeleteView):
         return super().form_valid(form)
 
 
-class VehiculoActivateView(SeguridadOAdminRequiredMixin, View):
+class VehiculoActivateView(AdminRequiredMixin, View):
+    """Cambiar la autorización de un vehículo es decisión del administrador."""
     http_method_names = ['post']
 
     def post(self, request, pk):
@@ -98,7 +99,7 @@ class VehiculoActivateView(SeguridadOAdminRequiredMixin, View):
         return redirect('vehiculos:lista')
 
 
-class VehiculoDeactivateView(SeguridadOAdminRequiredMixin, View):
+class VehiculoDeactivateView(AdminRequiredMixin, View):
     http_method_names = ['post']
 
     def post(self, request, pk):

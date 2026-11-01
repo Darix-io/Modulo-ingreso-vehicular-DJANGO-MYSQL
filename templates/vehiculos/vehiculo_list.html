@@ -107,6 +107,7 @@
                                     <span class="material-symbols-outlined text-xl">edit</span>
                                 </a>
                                 {% endif %}
+                                {% if user.is_administrador %}
                                 {% if vehiculo.estado != 'AUTORIZADO' %}
                                 <form method="post" action="{% url 'vehiculos:activar' vehiculo.pk %}">{% csrf_token %}
                                     <button type="submit" class="rounded-lg p-2 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700" title="Autorizar el ingreso" aria-label="Autorizar {{ vehiculo.placa }}">
@@ -120,6 +121,7 @@
                                         <span class="material-symbols-outlined text-xl">block</span>
                                     </button>
                                 </form>
+                                {% endif %}
                                 {% endif %}
                                 {% if user.is_administrador %}
                                 <a href="{% url 'vehiculos:eliminar' vehiculo.pk %}" class="rounded-lg p-2 text-red-600 no-underline hover:bg-red-50 hover:text-red-700" title="Eliminar" aria-label="Eliminar {{ vehiculo.placa }}">

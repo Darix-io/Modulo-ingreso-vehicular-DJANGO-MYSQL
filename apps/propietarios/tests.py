@@ -166,6 +166,12 @@ class PermisosYAccionesTests(BasePropietariosTests):
         self.assertEqual(self.client.post(reverse('propietarios:desactivar', args=[self.p.pk])).status_code, 403)
         self.assertTrue(Propietario.objects.filter(pk=self.p.pk, estado=True).exists())
 
+    def test_seguridad_no_puede_activar_a_un_propietario_inactivo(self):
+        Propietario.objects.filter(pk=self.p.pk).update(estado=False)
+        self.client.force_login(self.guardia)
+        self.assertEqual(self.client.post(reverse('propietarios:activar', args=[self.p.pk])).status_code, 403)
+        self.assertFalse(Propietario.objects.get(pk=self.p.pk).estado)
+
     def test_activar_y_desactivar_solo_por_post(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse('propietarios:desactivar', args=[self.p.pk])).status_code, 405)
