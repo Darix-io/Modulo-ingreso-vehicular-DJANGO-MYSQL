@@ -1,0 +1,55 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es-ec">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credencial {{ qr.vehiculo.placa }} · GaritaQR</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/credencial.css' %}">
+</head>
+<body>
+    {# Esta barra no se imprime #}
+    <div class="barra">
+        <a href="{% url 'qr:detalle' qr.pk %}">← Volver al detalle</a>
+        <button type="button" onclick="window.print()">Imprimir</button>
+    </div>
+
+    {% if not vigencia.es_vigente %}
+    <p class="aviso" role="alert">
+        <strong>Esta credencial no es válida:</strong>
+        {% if vigencia.clave == 'expirado' %}el código expiró el {{ qr.fecha_expiracion|date:"d/m/Y" }}.{% else %}el código está inactivo.{% endif %}
+        Renueva el QR desde el detalle antes de imprimirla.
+    </p>
+    {% endif %}
+
+    <article class="credencial">
+        <header>
+            <img src="{% static 'img/favicon.svg' %}" alt="">
+            <div>
+                <div class="marca">Garita<span>QR</span></div>
+                <small>UNEMI · CONTROL DE ACCESO VEHICULAR</small>
+            </div>
+        </header>
+
+        <div class="cuerpo">
+            {% if qr.imagen %}<img class="qr" src="{{ qr.imagen.url }}" alt="Código QR del vehículo {{ qr.vehiculo.placa }}">
+            {% else %}<div class="sin-qr">No hay imagen disponible</div>{% endif %}
+
+            <div class="placa">
+                <div class="pais">ECUADOR</div>
+                <div class="numero">{{ qr.vehiculo.placa }}</div>
+            </div>
+
+            <dl class="datos">
+                <div><dt>Titular</dt><dd>{{ qr.vehiculo.propietario.nombre }}</dd></div>
+                <div><dt>Vence</dt><dd>{{ qr.fecha_expiracion|date:"d/m/Y" }}</dd></div>
+            </dl>
+        </div>
+
+        <p class="instruccion">Colocar en el parabrisas</p>
+    </article>
+</body>
+</html>

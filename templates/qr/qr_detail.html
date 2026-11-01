@@ -1,63 +1,148 @@
 {% extends 'base.html' %}
 
-{% block title %}Detalle QR - Sistema QR{% endblock %}
+{% block title %}Detalle del QR {{ qr.vehiculo.placa }}{% endblock %}
+
+{# Pantalla rediseñada: ya no necesita Bootstrap #}
+{% block legacy_css %}{% endblock %}
+{% block legacy_js %}{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h2 class="text-success mb-4"><i class="fa-solid fa-qrcode"></i> Detalle de Código QR</h2>
+<div class="mx-auto max-w-6xl space-y-6">
 
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <dl class="row">
-                    <dt class="col-sm-4">Vehículo</dt>
-                    <dd class="col-sm-8">{{ qr.vehiculo.placa }} - {{ qr.vehiculo.marca }} {{ qr.vehiculo.modelo }}</dd>
+    <nav class="flex items-center gap-2 text-sm text-slate-500" aria-label="Ruta de navegación">
+        <a href="{% url 'qr:lista' %}" class="inline-flex items-center gap-1 font-semibold text-brand-tertiary no-underline hover:underline"><span class="material-symbols-outlined text-lg">arrow_back</span>Códigos QR</a>
+        <span>/</span><span>Detalle de la credencial {{ qr.vehiculo.placa }}</span>
+    </nav>
 
-                    <dt class="col-sm-4">Estado</dt>
-                    <dd class="col-sm-8">
-                        {% if qr.activo and not qr.is_expired %}
-                            <span class="badge bg-success">Activo</span>
-                        {% elif qr.is_expired %}
-                            <span class="badge bg-danger">Expirado</span>
-                        {% else %}
-                            <span class="badge bg-warning">Inactivo</span>
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-4">Creado</dt>
-                    <dd class="col-sm-8">{{ qr.fecha_creacion|date:"d/m/Y H:i" }}</dd>
-
-                    <dt class="col-sm-4">Expira</dt>
-                    <dd class="col-sm-8">{{ qr.fecha_expiracion|date:"d/m/Y H:i" }}</dd>
-
-                    <dt class="col-sm-4">Contenido</dt>
-                    <dd class="col-sm-8"><code>{{ qr.contenido }}</code></dd>
-                </dl>
-            </div>
-            <div class="col-md-6 text-center">
-                {% if qr.imagen %}
-                    <img src="{{ qr.imagen.url }}" class="img-fluid border rounded" alt="QR {{ qr.vehiculo.placa }}">
-                {% else %}
-                    <p class="text-muted">No hay imagen disponible.</p>
-                {% endif %}
+    {# Encabezado y acciones #}
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft lg:flex-row lg:items-center lg:justify-between lg:p-8">
+        <div class="flex items-center gap-4">
+            <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-secondary-container"><span class="material-symbols-outlined text-3xl">qr_code_2</span></span>
+            <div>
+                <h1 class="font-headline text-2xl font-bold tracking-tight text-brand-neutral">Credencial vehicular</h1>
+                <p class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                    {% include 'includes/badge_estado.html' with texto=vigencia.texto tono=vigencia.tono %}
+                    {{ qr.vehiculo.marca }} {{ qr.vehiculo.modelo }} · {{ qr.vehiculo.propietario.nombre }}
+                </p>
             </div>
         </div>
-
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'qr:descargar' qr.pk %}" class="btn btn-success">
-                <i class="fa-solid fa-download"></i> Descargar QR
-            </a>
-            <form method="post" action="{% url 'qr:renovar' qr.pk %}" class="d-inline">
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'qr:movimientos' %}?vehiculo={{ qr.vehiculo.placa|urlencode }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">swap_horiz</span>Ver movimientos</a>
+            <a href="{% url 'qr:credencial' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">print</span>Imprimir credencial</a>
+            {% if qr.imagen %}<a href="{% url 'qr:descargar' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">download</span>Descargar QR</a>{% endif %}
+            <form method="post" action="{% url 'qr:renovar' qr.pk %}" onsubmit="return confirm('Al renovar se genera un código nuevo y la credencial impresa anterior dejará de funcionar. ¿Renovar el QR de {{ qr.vehiculo.placa }}?');">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="btn btn-warning">
-                    <i class="fa-solid fa-sync"></i> Renovar QR
-                </button>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary"><span class="material-symbols-outlined text-xl text-secondary-container">autorenew</span>Renovar QR</button>
             </form>
-            <a href="{% url 'qr:movimientos' %}?vehiculo={{ qr.vehiculo.placa }}" class="btn btn-info text-white">
-                <i class="fa-solid fa-arrows-spin"></i> Ver Movimientos del Vehículo
-            </a>
-            <a href="{% url 'qr:lista' %}" class="btn btn-secondary">Volver a lista</a>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+
+        {# Vista previa de la credencial #}
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft lg:col-span-2">
+            <div class="flex items-center justify-between">
+                <h2 class="flex items-center gap-2 font-headline text-lg font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">badge</span>Credencial</h2>
+                <a href="{% url 'qr:credencial' qr.pk %}" class="text-sm font-semibold text-brand-tertiary no-underline hover:underline">Abrir para imprimir</a>
+            </div>
+            <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
+                {% include 'includes/logo.html' %}
+                <div class="mx-auto mt-4 w-fit rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+                    {% if qr.imagen %}<img src="{{ qr.imagen.url }}" alt="Código QR del vehículo {{ qr.vehiculo.placa }}" class="h-56 w-56 {% if not vigencia.es_vigente %}opacity-40 grayscale{% endif %}">
+                    {% else %}<p class="flex h-56 w-56 items-center justify-center text-sm text-slate-500">No hay imagen disponible.</p>{% endif %}
+                </div>
+                <p class="mt-2 font-mono text-xs text-slate-500">Código {{ qr.contenido|stringformat:"s"|slice:":8" }}…</p>
+                <div class="mt-3">{% include 'includes/placa.html' with placa=qr.vehiculo.placa %}</div>
+                <dl class="mt-4 space-y-1 text-left text-sm">
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Titular</dt><dd class="text-right font-semibold text-brand-neutral">{{ qr.vehiculo.propietario.nombre }}</dd></div>
+                    <div class="flex justify-between gap-3"><dt class="text-slate-500">Vence</dt><dd class="font-mono font-semibold {% if vigencia.clave == 'expirado' %}text-red-700{% else %}text-brand-neutral{% endif %}">{{ qr.fecha_expiracion|date:"d/m/Y" }}</dd></div>
+                </dl>
+                <p class="mt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Colocar en el parabrisas</p>
+            </div>
+        </section>
+
+        <div class="space-y-6 lg:col-span-3">
+            {# Vigencia #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="flex items-center gap-2 font-headline text-lg font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">verified</span>Estado de vigencia</h2>
+                    {% include 'includes/badge_estado.html' with texto=vigencia.texto tono=vigencia.tono %}
+                </div>
+                <div class="mt-4 rounded-xl bg-slate-50 p-4">
+                    <div class="flex flex-wrap items-end justify-between gap-2">
+                        <p class="font-mono text-2xl font-bold text-brand-neutral">
+                            {% if vigencia.clave == 'expirado' %}{% if vigencia.dias_vencido == 0 %}Expiró hoy{% else %}Expiró hace {{ vigencia.dias_vencido }} día{{ vigencia.dias_vencido|pluralize }}{% endif %}
+                            {% elif vigencia.clave == 'inactivo' %}Desactivado
+                            {% else %}{{ vigencia.dias_restantes }} día{{ vigencia.dias_restantes|pluralize }} restante{{ vigencia.dias_restantes|pluralize }}{% endif %}
+                        </p>
+                        <p class="font-mono text-sm text-slate-500">{{ vigencia.porcentaje }} % transcurrido</p>
+                    </div>
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full {% if vigencia.clave == 'expirado' %}bg-red-600{% elif vigencia.clave == 'por_vencer' %}bg-amber-500{% elif vigencia.clave == 'inactivo' %}bg-slate-400{% else %}bg-brand-primary{% endif %}" style="width: {{ vigencia.porcentaje }}%"></div></div>
+                </div>
+                <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    <div class="rounded-lg bg-slate-50 px-4 py-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Fecha de emisión</dt><dd class="mt-1 font-mono font-semibold text-brand-neutral">{{ qr.fecha_creacion|date:"d/m/Y H:i" }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 px-4 py-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Fecha de expiración</dt><dd class="mt-1 font-mono font-semibold {% if vigencia.clave == 'expirado' %}text-red-700{% elif vigencia.clave == 'por_vencer' %}text-amber-700{% else %}text-brand-neutral{% endif %}">{{ qr.fecha_expiracion|date:"d/m/Y H:i" }}</dd></div>
+                </dl>
+                {% if not vigencia.es_vigente %}
+                <p class="mt-4 flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800"><span class="material-symbols-outlined text-lg">warning</span>Este código no permite el ingreso. Renuévalo para activarlo de nuevo.</p>
+                {% endif %}
+            </section>
+
+            {# Vehículo y propietario #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <h2 class="flex items-center gap-2 font-headline text-lg font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">directions_car</span>Vehículo vinculado</h2>
+                <div class="mt-4 flex flex-wrap items-center gap-4">
+                    {% include 'includes/placa.html' with placa=qr.vehiculo.placa %}
+                    {% if qr.vehiculo.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}
+                    {% elif qr.vehiculo.estado == 'SUSPENDIDO' %}{% include 'includes/badge_estado.html' with texto='Suspendido' tono='rojo' %}
+                    {% else %}{% include 'includes/badge_estado.html' with texto='No autorizado' tono='gris' %}{% endif %}
+                </div>
+                <dl class="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                    <div class="rounded-lg bg-slate-50 px-4 py-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Marca y modelo</dt><dd class="mt-1 font-semibold text-brand-neutral">{{ qr.vehiculo.marca }} {{ qr.vehiculo.modelo }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 px-4 py-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Color</dt><dd class="mt-1 font-semibold text-brand-neutral">{{ qr.vehiculo.color }}</dd></div>
+                    <div class="rounded-lg bg-slate-50 px-4 py-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Año</dt><dd class="mt-1 font-mono font-semibold text-brand-neutral">{{ qr.vehiculo.anio|default_if_none:"—" }}</dd></div>
+                </dl>
+
+                <h3 class="mt-6 flex items-center gap-2 font-headline text-base font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">badge</span>Propietario</h3>
+                <div class="mt-3 flex items-start gap-4">
+                    {% include 'includes/avatar.html' with nombre=qr.vehiculo.propietario.nombre %}
+                    <dl class="grid flex-1 grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Nombre completo</dt><dd class="font-semibold text-brand-neutral">{{ qr.vehiculo.propietario.nombre }} <span class="ml-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-900">{{ qr.vehiculo.propietario.tipo }}</span></dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Identidad</dt><dd class="font-mono text-brand-neutral">{{ qr.vehiculo.propietario.numero_identidad }}</dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Correo</dt><dd class="text-brand-neutral">{{ qr.vehiculo.propietario.correo }}</dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Celular</dt><dd class="font-mono text-brand-neutral">{{ qr.vehiculo.propietario.celular }}</dd></div>
+                    </dl>
+                </div>
+                {% if not qr.vehiculo.propietario.estado %}
+                <p class="mt-4 flex items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800"><span class="material-symbols-outlined text-lg">warning</span>El propietario está inactivo: este vehículo no puede ingresar.</p>
+                {% endif %}
+            </section>
+
+            {# Resumen de accesos (calculado en services/codigos.py) #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="flex items-center gap-2 font-headline text-lg font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">insights</span>Resumen de accesos</h2>
+                    <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-600">Mes en curso: {{ accesos.mes|date:"F Y" }}</span>
+                </div>
+                <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Último ingreso registrado</p>
+                        {% if accesos.ultimo_ingreso %}
+                        <p class="mt-2 font-mono text-xl font-bold text-brand-neutral">{{ accesos.ultimo_ingreso.fecha_ingreso|date:"d/m/Y" }} · {{ accesos.ultimo_ingreso.fecha_ingreso|time:"H:i" }}</p>
+                        <p class="mt-1 text-sm text-slate-600">{% if accesos.guardia %}Validado por <strong class="font-semibold">{{ accesos.guardia }}</strong>{% else %}Guardia no registrado{% endif %}</p>
+                        {% else %}
+                        <p class="mt-2 text-sm text-slate-500">Este vehículo aún no tiene ingresos autorizados.</p>
+                        {% endif %}
+                    </div>
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total de ingresos este mes</p>
+                        <p class="mt-2 font-mono text-3xl font-bold text-brand-neutral">{{ accesos.total_mes }}</p>
+                        <p class="mt-1 text-sm text-slate-600">ingreso{{ accesos.total_mes|pluralize }} autorizado{{ accesos.total_mes|pluralize }} · {{ accesos.total_historico }} en total</p>
+                    </div>
+                </div>
+                <a href="{% url 'qr:historial' %}?placa={{ qr.vehiculo.placa|urlencode }}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-tertiary no-underline hover:underline">Ver historial completo de este vehículo<span class="material-symbols-outlined text-lg">arrow_forward</span></a>
+            </section>
         </div>
     </div>
 </div>

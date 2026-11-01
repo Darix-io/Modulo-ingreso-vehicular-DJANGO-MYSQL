@@ -14,9 +14,9 @@ from apps.propietarios.models import Propietario
 from apps.vehiculos.models import Vehiculo
 
 from ..models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
+from .codigos import qr_por_vencer, qr_vigentes
 
 HORAS_GRAFICO = range(6, 19, 2)   # 06:00, 08:00, ... 18:00 (bloques de 2 horas)
-DIAS_POR_VENCER = 3               # un QR "por vencer" vence en 3 días o menos
 
 
 def saludo(ahora=None):
@@ -173,12 +173,8 @@ def resumen_dashboard():
         'porcentaje_exito_ancho': int(porcentaje_exito or 0),   # entero: se usa en un style="width"
         'porcentaje_rechazo': _porcentaje(denegados_hoy, intentos_hoy),
         'causa_frecuente': _causa_frecuente(denegados),
-        'qr_activos': CodigoQR.objects.filter(activo=True, fecha_expiracion__gt=ahora).count(),
-        'qr_proximos_vencer': CodigoQR.objects.filter(
-            activo=True,
-            fecha_expiracion__gt=ahora,
-            fecha_expiracion__lte=ahora + timedelta(days=DIAS_POR_VENCER),
-        ).count(),
+        'qr_activos': qr_vigentes(CodigoQR.objects.all(), ahora).count(),
+        'qr_proximos_vencer': qr_por_vencer(CodigoQR.objects.all(), ahora).count(),
         'recent_movements': movimientos_hoy
             .select_related('vehiculo__propietario', 'usuario_validador')
             .order_by('-fecha')[:5],

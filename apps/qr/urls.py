@@ -9,6 +9,7 @@ urlpatterns = [
     # Códigos QR
     path('', views.QrListView.as_view(), name='lista'),
     path('detalle/<int:pk>/', views.QrDetailView.as_view(), name='detalle'),
+    path('credencial/<int:pk>/', views.QrCredencialView.as_view(), name='credencial'),
     path('descargar/<int:pk>/', views.QrDownloadView.as_view(), name='descargar'),
     path('renovar/<int:pk>/', views.QrRenovarView.as_view(), name='renovar'),
     path('configuracion/', views.ConfiguracionQRView.as_view(), name='configuracion_qr'),

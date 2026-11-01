@@ -1,6 +1,6 @@
 """
 Las vistas de la app QR están divididas por tema:
-    codigos.py       -> listar, ver, descargar y renovar QR
+    codigos.py       -> listar, ver, imprimir credencial, descargar y renovar QR
     accesos.py       -> validar QR, movimientos e historial
     reportes.py      -> exportar CSV / Excel / PDF y datos de gráficos
     configuracion.py -> configuración del sistema QR
@@ -13,7 +13,7 @@ from .accesos import (
     RegistroMovimientoListView,
     ValidarAccesoView,
 )
-from .codigos import QrDetailView, QrDownloadView, QrListView, QrRenovarView
+from .codigos import QrCredencialView, QrDetailView, QrDownloadView, QrListView, QrRenovarView
 from .configuracion import ConfiguracionQRView
 from .reportes import (
     DatosReporteHistorialView,
@@ -23,7 +23,7 @@ from .reportes import (
 )
 
 __all__ = [
-    'QrListView', 'QrDetailView', 'QrDownloadView', 'QrRenovarView',
+    'QrListView', 'QrDetailView', 'QrCredencialView', 'QrDownloadView', 'QrRenovarView',
     'ValidarAccesoView', 'RegistroMovimientoListView',
     'HistorialListView', 'HistorialReporteView',
     'ExportarHistorialCSVView', 'ExportarHistorialExcelView',

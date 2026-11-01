@@ -37,7 +37,8 @@ apps/qr/
   models.py         Solo tablas y reglas pequeñas del objeto
   signals.py        Crea el QR al registrar un vehículo
   filters.py        Filtros y orden del historial
-  services/         Lógica de negocio: generador, validacion, estadisticas, reportes
+  services/         Lógica de negocio: generador, validacion, estadisticas, reportes, codigos
+                    (codigos.py = definición ÚNICA de vigente / por vencer / expirado / inactivo)
   views/            Vistas por tema: codigos, accesos, reportes, configuracion
 templates/<modulo>/ Plantillas HTML por módulo      static/  CSS
 ```
@@ -73,6 +74,8 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 - El texto escaneado puede ser el UUID solo o la URL completa (`…?token=UUID`); un texto
   inválido devuelve "Código no válido", nunca un error 500 (`extraer_token`).
 - Todo el registro de un movimiento va dentro de `transaction.atomic()`.
+- Estados de un QR (`services/codigos.py`): vigente = activo y no expirado; por vencer = vigente que vence en
+  3 días o menos; expirados o inactivos = el resto. Lista, detalle y panel usan esa misma definición.
 - Un QR vencido se marca inactivo. Cada vehículo tiene un único `CodigoQR` (OneToOne), creado
   por señal al registrar el vehículo. `ConfiguracionQR` es un registro único (`get_solo()`, id=1).
 - `renovar()` genera nuevo token + imagen y reinicia la expiración.
@@ -91,8 +94,11 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 - Formularios: los widgets usan las clases de `apps/core/estilos.py` y las plantillas pintan cada campo con
   `includes/campo_form.html` (ícono + errores); las listas usan `includes/paginacion.html` (conserva filtros).
   Las reglas de validación van en un módulo propio (ej. `propietarios/validadores.py`) y se prueban solas.
+- La credencial imprimible (`qr:credencial`) es una página independiente (`credencial.css`), sin menú.
+  Renovar un QR genera un token nuevo: la credencial impresa anterior deja de funcionar.
 - Eliminar con cascada: pedir confirmación explícita (casilla) y mostrar lo que realmente se borra.
-- Plantillas: los botones de crear/editar/eliminar solo se muestran con `user.is_administrador`.
+- Plantillas: los botones de crear/editar/eliminar y de autorizar/desactivar (vehículos y propietarios) solo se
+  muestran con `user.is_administrador`, y las vistas lo exigen con `AdminRequiredMixin` (403).
   `{# #}` es solo de una línea; para varias líneas usar `{% comment %}`.
 - Zona horaria `America/Guayaquil`, `USE_TZ=True`, idioma `es-ec`.
 - Todo cambio de modelo lleva su migración; `makemigrations --check` debe quedar limpio.
