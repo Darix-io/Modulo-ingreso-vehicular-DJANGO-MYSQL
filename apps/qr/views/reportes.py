@@ -4,32 +4,41 @@ from django.views import View
 
 from apps.core.mixins import SeguridadOAdminRequiredMixin
 
-from ..filters import filtrar_historial
+from ..filters import filtrar_historial, orden_seguro
 from ..services import reportes
 
 
 class ExportarHistorialBaseView(SeguridadOAdminRequiredMixin, View):
-    """Aplica los mismos filtros de la pantalla y delega el formato al servicio."""
-    exportador = None   # cada subclase indica qué función del servicio usar
+    """Aplica los mismos filtros y el mismo orden de la pantalla y delega el formato al servicio."""
+
+    def consulta(self, request):
+        return filtrar_historial(request.GET).order_by(orden_seguro(request.GET), '-pk')
 
     def get(self, request):
-        queryset = filtrar_historial(request.GET).order_by('-fecha_ingreso')
-        return self.exportador(queryset)
+        return self.exportar(request, self.consulta(request))
+
+    def exportar(self, request, queryset):
+        raise NotImplementedError
 
 
 class ExportarHistorialCSVView(ExportarHistorialBaseView):
-    exportador = staticmethod(reportes.exportar_csv)
+    def exportar(self, request, queryset):
+        return reportes.exportar_csv(queryset)
 
 
 class ExportarHistorialExcelView(ExportarHistorialBaseView):
-    exportador = staticmethod(reportes.exportar_excel)
+    def exportar(self, request, queryset):
+        return reportes.exportar_excel(queryset)
 
 
 class ExportarHistorialPDFView(ExportarHistorialBaseView):
-    exportador = staticmethod(reportes.exportar_pdf)
+    def exportar(self, request, queryset):
+        return reportes.exportar_pdf(
+            queryset, filtros=reportes.descripcion_filtros(request.GET), usuario=request.user)
 
 
 class DatosReporteHistorialView(SeguridadOAdminRequiredMixin, View):
+    """JSON para los gráficos de la pantalla de reportes (respeta los mismos filtros)."""
 
     def get(self, request):
-        return JsonResponse(reportes.datos_graficos(filtrar_historial(request.GET)))
+        return JsonResponse(reportes.datos_graficos(filtrar_historial(request.GET), request.GET))

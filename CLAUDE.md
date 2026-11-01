@@ -78,6 +78,13 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 - La pantalla `qr:validar` es una sola, responsive: escáner con `html5-qrcode` (versión fija por CDN; valida una vez por
   lectura y vuelve con `?token=`), ingreso manual (`?placa=`), último resultado y accesos de hoy (no existe «turno»).
   Las páginas de resultado reemplazan su dirección con `history.replaceState` para que recargar no registre otro movimiento.
+- **Movimientos** (`RegistroMovimiento`) = todos los intentos, con contadores de HOY (`services/movimientos.py`;
+  ingresos/salidas cuentan solo autorizados) y filtros placa/tipo/estado (`filters.py`). **Historial** y **Reportes**
+  (`HistorialIngreso`) = solo ingresos autorizados; comparten filtros (`filtrar_historial`: texto, placa, guardia por
+  **id**, rango de fechas) y los includes `filtros_historial.html` / `tabla_historial.html`. Un ingreso sin guardia
+  (usuario eliminado) se muestra como «Sin guardia».
+- **Reportes**: gráficos con Chart.js (versión fija) desde `qr:reporte_historial_datos`; PDF, Excel y CSV usan los mismos
+  filtros y orden. El PDF lleva la marca (azul `#0A2540`, ámbar `#F59E0B`, logo dibujado con reportlab en `_dibujar_logo`).
 - Cada intento, autorizado **o denegado**, se guarda en `RegistroMovimiento`.
   `HistorialIngreso` se crea solo en ingresos autorizados.
 - Ingreso y salida **alternan solos**: si el último movimiento autorizado fue INGRESO, el siguiente es SALIDA.
