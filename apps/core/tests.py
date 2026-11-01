@@ -63,3 +63,35 @@ class PaginasDeErrorTests(TestCase):
             self.assertNotIn('bootstrap', html.lower(), plantilla)
             self.assertNotIn('https://', html, plantilla)                  # nada que cargar de internet
             self.assertIn('lang="es-ec"', html)
+
+
+class SinBootstrapTests(TestCase):
+    """Bootstrap y las librerías de las pantallas antiguas ya no se usan en ninguna parte."""
+    PROHIBIDO = ('bootstrap', 'sweetalert', 'lucide', 'font-awesome', 'fa-solid', 'legacy_css', 'legacy_js')
+
+    def test_ninguna_plantilla_ni_css_las_menciona(self):
+        import os
+        from django.conf import settings
+        archivos = []
+        for carpeta in (settings.BASE_DIR / 'templates', settings.BASE_DIR / 'static'):
+            for raiz, _dirs, nombres in os.walk(carpeta):
+                archivos += [os.path.join(raiz, n) for n in nombres if n.endswith(('.html', '.css', '.js'))]
+        self.assertGreater(len(archivos), 20)
+        for ruta in archivos:
+            if os.path.basename(ruta) in ('base_error.html',):          # solo lo nombra en un comentario
+                continue
+            texto = open(ruta, encoding='utf-8').read().lower()
+            for palabra in self.PROHIBIDO:
+                self.assertNotIn(palabra, texto, f'{palabra} en {ruta}')
+
+    def test_los_formularios_no_usan_clases_de_bootstrap(self):
+        import re
+        from apps.propietarios.forms import PropietarioForm
+        from apps.qr.forms import ConfiguracionQRForm
+        from apps.usuarios.forms import LoginForm
+        from apps.vehiculos.forms import VehiculoForm
+        bootstrap = re.compile(r'\b(form-control|form-select|form-check-input|form-check|btn|btn-[a-z]+|input-group)\b')
+        for formulario in (PropietarioForm, VehiculoForm, ConfiguracionQRForm, LoginForm):
+            for nombre, campo in formulario().fields.items():
+                clases = campo.widget.attrs.get('class', '')
+                self.assertIsNone(bootstrap.search(clases), f'{formulario.__name__}.{nombre}: {clases}')
