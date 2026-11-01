@@ -109,9 +109,11 @@
                                 <a href="{% url 'qr:detalle' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Ver detalle" aria-label="Ver detalle del QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">visibility</span></a>
                                 <a href="{% url 'qr:credencial' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Imprimir credencial" aria-label="Imprimir la credencial de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">print</span></a>
                                 <a href="{% url 'qr:descargar' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Descargar imagen" aria-label="Descargar el QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">download</span></a>
+                                {% if user.is_administrador %}
                                 <form method="post" action="{% url 'qr:renovar' qr.pk %}">{% csrf_token %}
                                     <button type="submit" class="rounded-lg p-2 text-amber-600 hover:bg-amber-50 hover:text-amber-700" title="Renovar (genera un token nuevo)" aria-label="Renovar el QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">autorenew</span></button>
                                 </form>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

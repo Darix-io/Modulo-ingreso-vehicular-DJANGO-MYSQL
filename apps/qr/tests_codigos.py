@@ -194,6 +194,36 @@ class ListaCodigosQRTests(BaseCodigosQRTests):
         self.assertFalse(codigo.is_expired)
 
 
+class RenovarSoloAdministradorTests(BaseCodigosQRTests):
+    def test_seguridad_recibe_403_y_el_token_no_cambia(self):
+        codigo = self.qr('GAA-0003')
+        token = codigo.contenido
+        self.client.force_login(self.guardia)
+        self.assertEqual(self.client.post(reverse('qr:renovar', args=[codigo.pk])).status_code, 403)
+        codigo.refresh_from_db()
+        self.assertEqual(codigo.contenido, token)
+
+    def test_boton_renovar_oculto_para_seguridad_en_lista_y_detalle(self):
+        codigo = self.qr('GAA-0003')
+        url_renovar = reverse('qr:renovar', args=[codigo.pk])
+        self.client.force_login(self.guardia)
+        for pagina in (reverse('qr:lista'), reverse('qr:detalle', args=[codigo.pk])):
+            self.assertNotContains(self.client.get(pagina), url_renovar)
+
+    def test_boton_renovar_visible_para_el_administrador(self):
+        codigo = self.qr('GAA-0003')
+        url_renovar = reverse('qr:renovar', args=[codigo.pk])
+        self.client.force_login(self.admin)
+        for pagina in (reverse('qr:lista'), reverse('qr:detalle', args=[codigo.pk])):
+            self.assertContains(self.client.get(pagina), url_renovar)
+
+    def test_seguridad_sigue_viendo_descargando_e_imprimiendo(self):
+        codigo = self.qr('GAA-0003')
+        self.client.force_login(self.guardia)
+        for nombre in ('qr:detalle', 'qr:credencial', 'qr:descargar'):
+            self.assertEqual(self.client.get(reverse(nombre, args=[codigo.pk])).status_code, 200)
+
+
 class DetalleCodigoQRTests(BaseCodigosQRTests):
     def test_muestra_vigencia_vehiculo_propietario_y_resumen_de_accesos(self):
         codigo = self.qr('GSA-3841', dias=20)

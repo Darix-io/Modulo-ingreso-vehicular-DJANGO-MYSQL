@@ -9,7 +9,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import DetailView, ListView
 
-from apps.core.mixins import SeguridadOAdminRequiredMixin
+from apps.core.mixins import AdminRequiredMixin, SeguridadOAdminRequiredMixin
 
 from ..models import CodigoQR
 from ..services import codigos as servicio
@@ -86,8 +86,8 @@ class QrDownloadView(SeguridadOAdminRequiredMixin, View):
         return FileResponse(archivo, as_attachment=True, filename=os.path.basename(codigo_qr.imagen.name))
 
 
-class QrRenovarView(SeguridadOAdminRequiredMixin, View):
-    """Solo POST: renovar cambia datos, no debe ocurrir al abrir un enlace."""
+class QrRenovarView(AdminRequiredMixin, View):
+    """Solo POST y solo administrador: renovar invalida la credencial impresa anterior."""
     http_method_names = ['post']
 
     def post(self, request, pk):

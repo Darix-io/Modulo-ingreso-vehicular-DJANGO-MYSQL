@@ -95,7 +95,8 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
   `includes/campo_form.html` (ícono + errores); las listas usan `includes/paginacion.html` (conserva filtros).
   Las reglas de validación van en un módulo propio (ej. `propietarios/validadores.py`) y se prueban solas.
 - La credencial imprimible (`qr:credencial`) es una página independiente (`credencial.css`), sin menú.
-  Renovar un QR genera un token nuevo: la credencial impresa anterior deja de funcionar.
+  Renovar un QR genera un token nuevo: la credencial impresa anterior deja de funcionar, por eso
+  renovar es solo del administrador (`AdminRequiredMixin`, botón oculto a Seguridad). Ver, descargar e imprimir son de ambos roles.
 - Eliminar con cascada: pedir confirmación explícita (casilla) y mostrar lo que realmente se borra.
 - Plantillas: los botones de crear/editar/eliminar y de autorizar/desactivar (vehículos y propietarios) solo se
   muestran con `user.is_administrador`, y las vistas lo exigen con `AdminRequiredMixin` (403).

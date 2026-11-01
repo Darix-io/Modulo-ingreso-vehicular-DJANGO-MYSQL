@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.core.roles import PERSONAL_SEGURIDAD
+from apps.core.roles import ADMINISTRADOR, PERSONAL_SEGURIDAD
 from apps.propietarios.models import Propietario
 from apps.qr.models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
 from apps.qr.services.validacion import extraer_token
@@ -51,6 +51,10 @@ class ValidarAccesoTests(TestCase):
         self.guardia = get_user_model().objects.create_user(
             username='guardia', email='guardia@unemi.edu.ec', cedula='0102030405',
             password='Clave12345!', rol=rol,
+        )
+        self.admin = get_user_model().objects.create_user(
+            username='admin_qr', email='admin_qr@unemi.edu.ec', cedula='0102030406',
+            password='Clave12345!', rol=Rol.objects.create(nombre=ADMINISTRADOR),
         )
         self.propietario = Propietario.objects.create(
             nombre='Juan Pérez', numero_identidad='1234567890', celular='0999999999',
@@ -121,7 +125,7 @@ class ValidarAccesoTests(TestCase):
         self.assertContains(respuesta, 'Código no válido')
 
     def test_renovar_solo_acepta_post(self):
-        self.client.force_login(self.guardia)
+        self.client.force_login(self.admin)
         url = reverse('qr:renovar', args=[self.codigo.pk])
         token_anterior = self.codigo.contenido
 
