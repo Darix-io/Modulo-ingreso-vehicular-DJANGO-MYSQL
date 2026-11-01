@@ -208,8 +208,8 @@
                     <dd class="font-mono font-semibold text-brand-neutral">{{ qr_expiration_days }} días</dd>
                 </div>
                 <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
-                    <dt class="text-slate-600">Reutilización</dt>
-                    <dd class="font-semibold text-brand-neutral">{% if qr_reutilizable %}Permitida{% else %}No permitida{% endif %}</dd>
+                    <dt class="text-slate-600">Renovación automática</dt>
+                    <dd>{% if qr_renovacion_automatica %}{% include 'includes/badge_estado.html' with texto='Activada' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Desactivada' tono='gris' %}{% endif %}</dd>
                 </div>
             </dl>
             {% if user.is_administrador %}

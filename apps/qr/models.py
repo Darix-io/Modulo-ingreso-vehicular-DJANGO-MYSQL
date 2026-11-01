@@ -22,7 +22,8 @@ class ConfiguracionQR(models.Model):
     descripcion = models.TextField(blank=True, null=True)
     expiration_days = models.PositiveIntegerField(default=30)
     activar_qr = models.BooleanField(default=True)
-    permitir_reutilizacion = models.BooleanField(default=False)
+    permitir_reutilizacion = models.BooleanField(default=False)   # sin uso: la validación no lo aplica
+    renovacion_automatica = models.BooleanField(default=False)
     ultima_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:

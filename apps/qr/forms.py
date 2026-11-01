@@ -1,26 +1,32 @@
 from django import forms
+
 from .models import ConfiguracionQR
+from .validadores import DIAS_MAXIMO, DIAS_MINIMO, validar_dias_vigencia
+
+CLASES_NUMERO = (
+    'w-20 border-0 bg-transparent p-0 text-center font-mono text-2xl font-bold text-brand-neutral '
+    'focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
+)
+CLASES_INTERRUPTOR = 'peer sr-only'
 
 
 class ConfiguracionQRForm(forms.ModelForm):
+    """Solo los parámetros que el sistema realmente aplica: validación, vigencia y renovación automática."""
+
     class Meta:
         model = ConfiguracionQR
-        fields = [
-            'nombre',
-            'descripcion',
-            'expiration_days',
-            'activar_qr',
-            'permitir_reutilizacion',
-        ]
+        fields = ['activar_qr', 'expiration_days', 'renovacion_automatica']
+        labels = {
+            'activar_qr': 'Validación de QR activada',
+            'expiration_days': 'Días de vigencia del QR',
+            'renovacion_automatica': 'Renovación automática',
+        }
         widgets = {
-            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
-            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'expiration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
-            'activar_qr': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'permitir_reutilizacion': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'activar_qr': forms.CheckboxInput(attrs={'class': CLASES_INTERRUPTOR}),
+            'expiration_days': forms.NumberInput(attrs={
+                'class': CLASES_NUMERO, 'min': DIAS_MINIMO, 'max': DIAS_MAXIMO, 'inputmode': 'numeric'}),
+            'renovacion_automatica': forms.CheckboxInput(attrs={'class': CLASES_INTERRUPTOR}),
         }
-        help_texts = {
-            'expiration_days': 'Número de días que permanecerá válido un código QR desde su creación o renovación.',
-            'activar_qr': 'Si está deshabilitado, ningún QR podrá ser validado hasta reactivar esta opción.',
-            'permitir_reutilizacion': 'Permitir que un mismo QR pueda usarse varias veces antes de expirar.',
-        }
+
+    def clean_expiration_days(self):
+        return validar_dias_vigencia(self.cleaned_data.get('expiration_days'))

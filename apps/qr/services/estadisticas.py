@@ -165,7 +165,7 @@ def resumen_dashboard():
         'total_accesos': HistorialIngreso.objects.count(),
         'qr_expiration_days': configuracion.expiration_days,
         'qr_activada': configuracion.activar_qr,
-        'qr_reutilizable': configuracion.permitir_reutilizacion,
+        'qr_renovacion_automatica': configuracion.renovacion_automatica,
         'autorizados_hoy': autorizados_hoy,
         'denegados_hoy': denegados_hoy,
         'intentos_hoy': intentos_hoy,

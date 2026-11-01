@@ -3,7 +3,7 @@ from .models import ConfiguracionQR, CodigoQR, HistorialIngreso, RegistroMovimie
 
 @admin.register(ConfiguracionQR)
 class ConfiguracionQRAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'expiration_days', 'activar_qr', 'permitir_reutilizacion', 'ultima_actualizacion')
+    list_display = ('nombre', 'expiration_days', 'activar_qr', 'renovacion_automatica', 'ultima_actualizacion')
     readonly_fields = ('ultima_actualizacion',)
 
 @admin.register(CodigoQR)
