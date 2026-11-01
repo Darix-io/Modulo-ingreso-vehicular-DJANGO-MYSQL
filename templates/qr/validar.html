@@ -34,7 +34,8 @@
                     <span id="lector-punto" class="h-2 w-2 rounded-full bg-amber-400"></span>
                     <span id="lector-estado">Iniciando cámara…</span>
                 </div>
-                <div id="lector" class="min-h-[20rem] w-full sm:min-h-[26rem]"></div>
+                {# Visor cuadrado en móvil (el marco de lectura siempre es un cuadrado completo); en escritorio ocupa el alto disponible #}
+                <div id="lector" class="aspect-square w-full lg:aspect-auto lg:h-full lg:min-h-[26rem]"></div>
 
                 <div id="lector-error" class="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-3 bg-slate-950 p-6 text-center" role="alert">
                     <span class="material-symbols-outlined text-5xl text-amber-400">videocam_off</span>
@@ -153,6 +154,14 @@
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+    /* El video llena el visor sin deformarse; así el marco de html5-qrcode mide lo mismo que el visor */
+    #lector { overflow: hidden; }
+    #lector video { width: 100% !important; height: 100% !important; object-fit: cover; }
+</style>
+{% endblock %}
+
 {% block scripts %}
 {# Versión fija de la librería del escáner. La cámara solo funciona en localhost o con HTTPS. #}
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -215,7 +224,12 @@
         lector = lector || new Html5Qrcode('lector');
         const configuracion = {
             fps: 10,
-            qrbox: function (ancho, alto) { const lado = Math.floor(Math.min(ancho, alto) * 0.7); return { width: lado, height: lado }; },
+            // Marco siempre cuadrado: 70 % del lado menor del visor (nunca más grande que el visor, mínimo 150 px)
+            qrbox: function (ancho, alto) {
+                const menor = Math.min(ancho, alto);
+                const lado = Math.min(menor, Math.max(150, Math.floor(menor * 0.7)));
+                return { width: lado, height: lado };
+            },
         };
         lector.start({ facingMode: 'environment' }, configuracion, alLeer, function () {})
             .then(function () {
