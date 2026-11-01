@@ -1,7 +1,10 @@
+import tempfile
 from datetime import timedelta
+from io import StringIO
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.management import call_command
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -9,7 +12,7 @@ from apps.core.roles import PERSONAL_SEGURIDAD
 from apps.propietarios.models import Propietario
 from apps.qr.models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
 from apps.qr.services.validacion import extraer_token
-from apps.usuarios.models import Rol
+from apps.usuarios.models import Rol, Usuario
 from apps.vehiculos.models import Vehiculo
 
 
@@ -127,3 +130,72 @@ class ValidarAccesoTests(TestCase):
         self.client.post(url)
         self.codigo.refresh_from_db()
         self.assertNotEqual(self.codigo.contenido, token_anterior)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class SeedDemoTests(TestCase):
+    """El comando seed_demo crea datos realistas y no se duplica."""
+
+    @classmethod
+    def setUpTestData(cls):
+        call_command('seed_demo', stdout=StringIO())
+
+    def test_crea_propietarios_vehiculos_y_qr(self):
+        self.assertEqual(Propietario.objects.count(), 15)
+        self.assertEqual(set(Propietario.objects.values_list('tipo', flat=True)),
+                         {'Estudiante', 'Docente', 'Administrativo', 'Visitante'})
+        self.assertEqual(Vehiculo.objects.count(), 20)
+        self.assertEqual(CodigoQR.objects.count(), 20)
+        self.assertEqual(set(Vehiculo.objects.values_list('estado', flat=True)),
+                         {Vehiculo.AUTORIZADO, Vehiculo.SUSPENDIDO, Vehiculo.NO_AUTORIZADO})
+        self.assertTrue(Vehiculo.objects.filter(placa='GSA-3841').exists())
+
+    def test_cedulas_de_10_digitos_y_celulares_validos(self):
+        for propietario in Propietario.objects.all():
+            self.assertRegex(propietario.numero_identidad, r'^\d{10}$')
+            self.assertRegex(propietario.celular, r'^09\d{8}$')
+
+    def test_qr_vigentes_por_vencer_y_expirados(self):
+        ahora = timezone.now()
+        por_vencer = CodigoQR.objects.filter(
+            activo=True, fecha_expiracion__gt=ahora, fecha_expiracion__lte=ahora + timedelta(days=3))
+        expirados = CodigoQR.objects.filter(fecha_expiracion__lte=ahora)
+        self.assertEqual(por_vencer.count(), 3)
+        self.assertEqual(expirados.count(), 3)
+        self.assertFalse(expirados.filter(activo=True).exists())
+
+    def test_movimientos_de_30_dias_con_dos_guardias(self):
+        self.assertGreater(RegistroMovimiento.objects.count(), 100)
+        self.assertTrue(RegistroMovimiento.objects.filter(estado=RegistroMovimiento.DENEGADO).exists())
+        guardias = set(RegistroMovimiento.objects.values_list('usuario_validador__username', flat=True))
+        self.assertEqual(guardias, {'seguridad', 'seguridad2'})
+        mas_antiguo = RegistroMovimiento.objects.order_by('fecha').first().fecha
+        self.assertGreaterEqual(mas_antiguo, timezone.now() - timedelta(days=31))
+        self.assertFalse(RegistroMovimiento.objects.filter(fecha__gt=timezone.now()).exists())
+
+    def test_historial_coincide_con_los_ingresos_autorizados(self):
+        ingresos = RegistroMovimiento.objects.filter(
+            estado=RegistroMovimiento.AUTORIZADO, tipo=RegistroMovimiento.INGRESO).count()
+        self.assertEqual(HistorialIngreso.objects.count(), ingresos)
+
+    def test_los_denegados_tienen_el_motivo_real_de_las_reglas(self):
+        motivos = set(RegistroMovimiento.objects.filter(
+            estado=RegistroMovimiento.DENEGADO).values_list('detalle', flat=True))
+        permitidos = {'Código expirado', 'Código desactivado', 'Propietario inactivo',
+                      'Vehículo acceso suspendido', 'Vehículo no autorizado'}
+        self.assertTrue(motivos <= permitidos, motivos - permitidos)
+
+    def test_no_duplica_al_ejecutarse_dos_veces(self):
+        movimientos = RegistroMovimiento.objects.count()
+        salida = StringIO()
+        call_command('seed_demo', stdout=salida)
+        self.assertIn('ya existen', salida.getvalue())
+        self.assertEqual(Propietario.objects.count(), 15)
+        self.assertEqual(Vehiculo.objects.count(), 20)
+        self.assertEqual(RegistroMovimiento.objects.count(), movimientos)
+
+    def test_usuarios_con_nombre_y_segundo_guardia(self):
+        nombres = {u.username: u.get_full_name() for u in Usuario.objects.all()}
+        self.assertEqual(nombres['admin'], 'Carlos Mendoza')
+        self.assertEqual(nombres['seguridad'], 'Víctor Morán')
+        self.assertEqual(nombres['seguridad2'], 'Luis Castro')

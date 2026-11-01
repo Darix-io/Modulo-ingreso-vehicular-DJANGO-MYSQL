@@ -1,10 +1,11 @@
 """
-Crea los roles y dos usuarios de prueba.
+Crea los roles y los usuarios de prueba (un administrador y dos guardias).
 
     python manage.py seed_roles_users
 
 Las contraseñas se pueden cambiar en el .env con SEED_ADMIN_PASSWORD y
-SEED_SEGURIDAD_PASSWORD (si no existen, se usan las de ejemplo).
+SEED_SEGURIDAD_PASSWORD (si no existen, se usan las de ejemplo). Los dos guardias
+comparten la contraseña de seguridad.
 """
 import os
 
@@ -17,6 +18,8 @@ from apps.usuarios.models import Rol, Usuario
 USUARIOS_SEMILLA = [
     {
         'username': 'admin',
+        'first_name': 'Carlos',
+        'last_name': 'Mendoza',
         'email': 'admin@unemi.edu.ec',
         'cedula': '9999999999',
         'rol': ADMINISTRADOR,
@@ -26,8 +29,21 @@ USUARIOS_SEMILLA = [
     },
     {
         'username': 'seguridad',
+        'first_name': 'Víctor',
+        'last_name': 'Morán',
         'email': 'seguridad@unemi.edu.ec',
         'cedula': '8888888888',
+        'rol': PERSONAL_SEGURIDAD,
+        'is_superuser': False,
+        'password_env': 'SEED_SEGURIDAD_PASSWORD',
+        'password_defecto': 'Seguridad123!',
+    },
+    {
+        'username': 'seguridad2',
+        'first_name': 'Luis',
+        'last_name': 'Castro',
+        'email': 'seguridad2@unemi.edu.ec',
+        'cedula': '7777777777',
         'rol': PERSONAL_SEGURIDAD,
         'is_superuser': False,
         'password_env': 'SEED_SEGURIDAD_PASSWORD',
@@ -37,7 +53,7 @@ USUARIOS_SEMILLA = [
 
 
 class Command(BaseCommand):
-    help = 'Crea roles básicos y usuarios de ejemplo (administrador y seguridad).'
+    help = 'Crea roles básicos y usuarios de ejemplo (administrador y dos guardias).'
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -54,6 +70,11 @@ class Command(BaseCommand):
                 username=datos['username'],
                 defaults={'email': datos['email'], 'cedula': datos['cedula']},
             )
+            # Nombre y apellido: se completan solo si el usuario no los tiene
+            if not usuario.first_name:
+                usuario.first_name = datos['first_name']
+            if not usuario.last_name:
+                usuario.last_name = datos['last_name']
             usuario.rol = roles[datos['rol']]
             usuario.is_superuser = datos['is_superuser']
             usuario.is_staff = True
