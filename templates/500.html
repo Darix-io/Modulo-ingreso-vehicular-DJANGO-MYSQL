@@ -1,0 +1,8 @@
+{% extends 'errores/base_error.html' %}
+{% comment %}La 500 se dibuja sin sesión ni contexto: por eso el botón siempre lleva al panel (si no hay sesión, el panel pide iniciarla).{% endcomment %}
+{% block titulo_pagina %}Error del sistema{% endblock %}
+{% block icono %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>{% endblock %}
+{% block codigo %}Error 500{% endblock %}
+{% block titulo %}Algo salió mal de nuestro lado{% endblock %}
+{% block mensaje %}Ocurrió un error inesperado y no pudimos completar lo que pediste. Intenta de nuevo en unos minutos; si sigue pasando, avisa al administrador.{% endblock %}
+{% block boton %}<a class="boton" href="{% url 'usuarios:dashboard' %}">Volver al panel</a>{% endblock %}
