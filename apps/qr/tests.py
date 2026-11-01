@@ -379,3 +379,57 @@ class SeedDemoResetTests(TestCase):
         ahora = timezone.now()
         self.assertEqual(CodigoQR.objects.count(), 20)
         self.assertEqual(CodigoQR.objects.filter(fecha_expiracion__lte=ahora).count(), 3)
+
+
+class PeriodosEquivalentesTests(TestCase):
+    """Semana y mes en curso se comparan contra el MISMO tramo del periodo anterior."""
+
+    def _a_las(self, anio, mes, dia, hora=10):
+        return timezone.make_aware(datetime(anio, mes, dia, hora, 0))
+
+    def test_semana_en_curso_contra_los_mismos_dias_de_la_semana_pasada(self):
+        from apps.qr.services.estadisticas import periodos_equivalentes
+        ahora = self._a_las(2026, 11, 4)                       # miércoles 10:00
+        desde, ant_desde, ant_hasta = periodos_equivalentes(ahora)['semana']
+        self.assertEqual(desde, self._a_las(2026, 11, 2, 0))           # lunes
+        self.assertEqual(ant_desde, self._a_las(2026, 10, 26, 0))      # lunes pasado
+        self.assertEqual(ant_hasta, self._a_las(2026, 10, 28, 10))     # miércoles pasado 10:00
+
+    def test_mes_en_curso_contra_los_mismos_dias_del_mes_pasado(self):
+        from apps.qr.services.estadisticas import periodos_equivalentes
+        ahora = self._a_las(2026, 11, 1, 3)                    # 1 de noviembre, 03:00
+        desde, ant_desde, ant_hasta = periodos_equivalentes(ahora)['mes']
+        self.assertEqual(desde, self._a_las(2026, 11, 1, 0))
+        self.assertEqual(ant_desde, self._a_las(2026, 10, 1, 0))
+        self.assertEqual(ant_hasta, self._a_las(2026, 10, 1, 3))       # solo 3 horas, no octubre entero
+
+    def test_mes_pasado_mas_corto_no_se_sale_de_su_mes(self):
+        from apps.qr.services.estadisticas import periodos_equivalentes
+        ahora = self._a_las(2026, 3, 31)                       # febrero tiene 28 días
+        desde, ant_desde, ant_hasta = periodos_equivalentes(ahora)['mes']
+        self.assertEqual(ant_desde, self._a_las(2026, 2, 1, 0))
+        self.assertEqual(ant_hasta, self._a_las(2026, 3, 1, 0))        # tope: fin de febrero
+
+    def test_el_conteo_compara_tramos_iguales_y_no_da_menos_100(self):
+        from apps.qr.services.estadisticas import _comparativos_ingresos, _variacion_pct
+        propietario = Propietario.objects.create(
+            nombre='Ana Mora', numero_identidad='0912345678', celular='0991234567',
+            correo='ana@unemi.edu.ec', tipo='Docente')
+        vehiculo = Vehiculo.objects.create(
+            propietario=propietario, placa='GAA-1111', marca='Kia', modelo='Rio', color='Gris')
+
+        def ingreso(momento):
+            registro = HistorialIngreso.objects.create(vehiculo=vehiculo)
+            HistorialIngreso.objects.filter(pk=registro.pk).update(fecha_ingreso=momento)
+
+        # Octubre: 2 ingresos el día 1 (dentro del tramo) y 5 al final del mes (fuera del tramo)
+        ingreso(self._a_las(2026, 10, 1, 1))
+        ingreso(self._a_las(2026, 10, 1, 2))
+        for dia in range(20, 25):
+            ingreso(self._a_las(2026, 10, dia))
+        ingreso(self._a_las(2026, 11, 1, 1))                   # noviembre: 1 ingreso
+
+        datos = _comparativos_ingresos(self._a_las(2026, 11, 1, 3))
+        self.assertEqual(datos['ingresos_mes_actual'], 1)
+        self.assertEqual(datos['ingresos_mes_pasado'], 2)      # solo el 1 de octubre hasta las 03:00
+        self.assertEqual(_variacion_pct(datos['ingresos_mes_actual'], datos['ingresos_mes_pasado']), -50.0)

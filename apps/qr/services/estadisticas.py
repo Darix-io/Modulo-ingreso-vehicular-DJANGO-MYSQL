@@ -62,24 +62,57 @@ def _contar_ingresos(desde, hasta=None):
     return HistorialIngreso.objects.filter(**filtros).count()
 
 
-def _comparativos_ingresos(hoy):
+def periodos_equivalentes(ahora):
+    """
+    Periodos de la MISMA duración para comparar justo.
+
+    Comparar "el mes en curso (1 día)" contra "el mes pasado completo (31 días)" siempre
+    da una caída enorme. Aquí se compara lo transcurrido del periodo actual contra el mismo
+    tramo del periodo anterior: si hoy es miércoles 10:00, la semana en curso va de lunes
+    a hoy 10:00 y se compara con lunes a miércoles 10:00 de la semana pasada.
+
+    Devuelve {'semana': (desde_actual, desde_anterior, hasta_anterior),
+              'mes': (...)}   (el "hasta" es exclusivo; el actual llega hasta `ahora`).
+    """
+    hoy = timezone.localdate(ahora)
+    inicio_hoy = _inicio_del_dia(hoy)
+
+    inicio_semana = inicio_hoy - timedelta(days=hoy.weekday())
+    semana_anterior = inicio_semana - timedelta(days=7)
+
+    inicio_mes = _inicio_del_dia(hoy.replace(day=1))
+    mes_anterior = _inicio_del_dia((hoy.replace(day=1) - timedelta(days=1)).replace(day=1))
+
+    return {
+        'semana': (
+            inicio_semana, semana_anterior,
+            min(semana_anterior + (ahora - inicio_semana), inicio_semana),
+        ),
+        # Si el mes pasado es más corto (p. ej. 31 de marzo vs. febrero) no pasa del 1.º del mes actual
+        'mes': (
+            inicio_mes, mes_anterior,
+            min(mes_anterior + (ahora - inicio_mes), inicio_mes),
+        ),
+    }
+
+
+def _comparativos_ingresos(ahora):
+    hoy = timezone.localdate(ahora)
     inicio_hoy = _inicio_del_dia(hoy)
     inicio_manana = inicio_hoy + timedelta(days=1)
     inicio_ayer = inicio_hoy - timedelta(days=1)
 
-    inicio_semana = inicio_hoy - timedelta(days=hoy.weekday())
-    inicio_semana_pasada = inicio_semana - timedelta(days=7)
-
-    inicio_mes = _inicio_del_dia(hoy.replace(day=1))
-    inicio_mes_pasado = _inicio_del_dia((hoy.replace(day=1) - timedelta(days=1)).replace(day=1))
+    periodos = periodos_equivalentes(ahora)
+    semana_desde, semana_ant_desde, semana_ant_hasta = periodos['semana']
+    mes_desde, mes_ant_desde, mes_ant_hasta = periodos['mes']
 
     datos = {
         'ingresos_hoy': _contar_ingresos(inicio_hoy, inicio_manana),
         'ingresos_ayer': _contar_ingresos(inicio_ayer, inicio_hoy),
-        'ingresos_semana_actual': _contar_ingresos(inicio_semana),
-        'ingresos_semana_pasada': _contar_ingresos(inicio_semana_pasada, inicio_semana),
-        'ingresos_mes_actual': _contar_ingresos(inicio_mes),
-        'ingresos_mes_pasado': _contar_ingresos(inicio_mes_pasado, inicio_mes),
+        'ingresos_semana_actual': _contar_ingresos(semana_desde),
+        'ingresos_semana_pasada': _contar_ingresos(semana_ant_desde, semana_ant_hasta),
+        'ingresos_mes_actual': _contar_ingresos(mes_desde),
+        'ingresos_mes_pasado': _contar_ingresos(mes_ant_desde, mes_ant_hasta),
     }
     datos['diferencia_ingresos'] = datos['ingresos_hoy'] - datos['ingresos_ayer']
     datos['diferencia_semana'] = datos['ingresos_semana_actual'] - datos['ingresos_semana_pasada']
@@ -150,7 +183,7 @@ def resumen_dashboard():
             .select_related('vehiculo__propietario', 'usuario_validador')
             .order_by('-fecha')[:5],
     }
-    contexto.update(_comparativos_ingresos(hoy))
+    contexto.update(_comparativos_ingresos(ahora))
     contexto['variacion_semana_pct'] = _variacion_pct(
         contexto['ingresos_semana_actual'], contexto['ingresos_semana_pasada'])
     contexto['variacion_mes_pct'] = _variacion_pct(

@@ -120,12 +120,12 @@
             <p class="mt-1 text-sm text-slate-500">Ingresos autorizados acumulados</p>
             <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div class="rounded-lg bg-slate-50 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Semana vs. pasada</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Semana vs. pasada <span class="normal-case tracking-normal">(mismos días)</span></p>
                     {% if variacion_semana_pct is None %}<p class="mt-1 text-slate-500">Sin datos previos</p>
                     {% else %}<p class="mt-1 font-mono font-semibold {% if variacion_semana_pct >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">{% if variacion_semana_pct >= 0 %}+{% endif %}{{ variacion_semana_pct|floatformat:1 }} %</p>{% endif %}
                 </div>
                 <div class="rounded-lg bg-slate-50 px-3 py-2">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mes vs. pasado</p>
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mes vs. pasado <span class="normal-case tracking-normal">(mismos días)</span></p>
                     {% if variacion_mes_pct is None %}<p class="mt-1 text-slate-500">Sin datos previos</p>
                     {% else %}<p class="mt-1 font-mono font-semibold {% if variacion_mes_pct >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">{% if variacion_mes_pct >= 0 %}+{% endif %}{{ variacion_mes_pct|floatformat:1 }} %</p>{% endif %}
                 </div>
