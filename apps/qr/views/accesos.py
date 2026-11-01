@@ -5,10 +5,12 @@ from django.views.generic import ListView
 
 from apps.core.mixins import SeguridadOAdminRequiredMixin
 
-from ..filters import filtrar_historial, orden_alterno, orden_seguro
+from ..filters import (
+    filtrar_historial, filtrar_movimientos, leer_filtros_movimientos, orden_alterno, orden_seguro)
 from ..models import RegistroMovimiento
 from ..services.codigos import vigencia_qr
 from ..services.garita import ultimos_accesos
+from ..services.movimientos import contadores_hoy
 from ..services.validacion import validar_acceso, validar_por_placa
 
 
@@ -44,18 +46,24 @@ class ValidarAccesoView(SeguridadOAdminRequiredMixin, View):
 
 
 class RegistroMovimientoListView(SeguridadOAdminRequiredMixin, ListView):
+    """Todos los intentos de acceso (autorizados y denegados) con los contadores de hoy."""
     template_name = 'qr/movimientos.html'
     context_object_name = 'movimientos'
-    paginate_by = 10
+    paginate_by = 15
 
     def get_queryset(self):
-        queryset = RegistroMovimiento.objects.select_related(
-            'vehiculo', 'codigo_qr', 'usuario_validador',
-        )
-        placa = self.request.GET.get('vehiculo', '').strip()
-        if placa:
-            queryset = queryset.filter(vehiculo__placa__iexact=placa)
-        return queryset
+        self.filtros = leer_filtros_movimientos(self.request.GET)
+        return filtrar_movimientos(self.filtros)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'filtros': self.filtros,
+            'hay_filtros': any(self.filtros.values()),
+            'contadores': contadores_hoy(),
+            'total_movimientos': RegistroMovimiento.objects.count(),
+        })
+        return context
 
 
 class HistorialFiltroMixin:

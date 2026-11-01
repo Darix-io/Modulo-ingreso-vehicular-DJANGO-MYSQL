@@ -1,102 +1,129 @@
 {% extends 'base.html' %}
+{% load query_transform %}
 
-{% block title %}Movimientos de QR{% endblock %}
+{% block title %}Movimientos{% endblock %}
+
+{# Pantalla rediseñada: ya no necesita Bootstrap #}
+{% block legacy_css %}{% endblock %}
+{% block legacy_js %}{% endblock %}
 
 {% block content %}
-<h2 class="text-primary mb-4"><i class="fa-solid fa-arrows-spin"></i> Movimientos de QR</h2>
-<form method="get" class="row g-2 align-items-end mb-4">
-    <div class="col-auto">
-        <label for="vehiculo" class="form-label">Filtrar por placa</label>
-        <input id="vehiculo" name="vehiculo" type="text" class="form-control" placeholder="Ej. ABC-123" value="{{ request.GET.vehiculo|default_if_none:'' }}">
-    </div>
-    <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Aplicar filtro</button>
-    </div>
-    <div class="col-auto">
-        <a href="{% url 'qr:movimientos' %}" class="btn btn-secondary">Ver todos</a>
-    </div>
-</form>
-<div class="mb-3">
-    {% if request.GET.vehiculo %}
-        <p class="mb-0"><strong>Mostrando movimientos para placa:</strong> {{ request.GET.vehiculo }}</p>
-    {% else %}
-        <p class="mb-0 text-muted">Mostrando todos los movimientos.</p>
-    {% endif %}
+<div class="space-y-6">
+
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between lg:p-8">
+        <div>
+            <h1 class="font-headline text-3xl font-bold tracking-tight text-brand-neutral">Movimientos de acceso</h1>
+            <p class="mt-1 text-slate-500">Todos los intentos de ingreso y salida en la garita, autorizados y denegados, con su motivo.</p>
+        </div>
+        <a href="{% url 'qr:validar' %}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm hover:bg-primary hover:text-white">
+            <span class="material-symbols-outlined text-xl text-secondary-container">qr_code_scanner</span>Validar acceso
+        </a>
+    </section>
+
+    {# Contadores de HOY (no cambian con los filtros) #}
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Movimientos de hoy">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total de hoy</p>
+                <span class="material-symbols-outlined text-2xl text-brand-tertiary">swap_horiz</span>
+            </div>
+            <p class="mt-2 font-mono text-4xl font-bold text-brand-neutral">{{ contadores.total }}</p>
+            <p class="mt-2 text-sm text-slate-500">intento{{ contadores.total|pluralize }} de acceso</p>
+        </div>
+        <a href="?{% query_transform estado='autorizado' page=1 %}" class="block rounded-2xl border bg-white p-5 no-underline shadow-soft transition hover:shadow-md {% if filtros.estado == 'autorizado' %}border-brand-primary ring-2 ring-brand-primary{% else %}border-slate-200{% endif %}">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Autorizados</p>
+                <span class="material-symbols-outlined text-2xl text-emerald-500">check_circle</span>
+            </div>
+            <p class="mt-2 font-mono text-4xl font-bold text-brand-neutral">{{ contadores.autorizados }}</p>
+            <p class="mt-2 text-sm text-slate-500">{% if contadores.pct_autorizados is not None %}{{ contadores.pct_autorizados }} % del total{% else %}Sin intentos todavía{% endif %}</p>
+        </a>
+        <a href="?{% query_transform estado='denegado' page=1 %}" class="block rounded-2xl border bg-white p-5 no-underline shadow-soft transition hover:shadow-md {% if filtros.estado == 'denegado' %}border-brand-primary ring-2 ring-brand-primary{% else %}border-slate-200{% endif %}">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Denegados</p>
+                <span class="material-symbols-outlined text-2xl text-red-500">block</span>
+            </div>
+            <p class="mt-2 font-mono text-4xl font-bold {% if contadores.denegados %}text-red-700{% else %}text-brand-neutral{% endif %}">{{ contadores.denegados }}</p>
+            <p class="mt-2 text-sm text-slate-500">{% if contadores.pct_denegados is not None %}{{ contadores.pct_denegados }} % del total{% else %}Sin intentos todavía{% endif %}</p>
+        </a>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Ingresos y salidas</p>
+                <span class="material-symbols-outlined text-2xl text-brand-tertiary">compare_arrows</span>
+            </div>
+            <p class="mt-2 font-mono text-4xl font-bold text-brand-neutral">{{ contadores.ingresos }}<span class="px-1 text-2xl text-slate-300">/</span>{{ contadores.salidas }}</p>
+            <p class="mt-2 text-sm text-slate-500">ingresos / salidas autorizados</p>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+        <form method="get" class="flex flex-col gap-3 px-5 py-5 lg:flex-row lg:items-center lg:px-6" role="search">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-slate-400">search</span>
+                <input type="search" name="placa" value="{{ filtros.placa }}" placeholder="Buscar por placa (ej. GSA-3841)" autocomplete="off"
+                       class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 font-mono text-sm uppercase shadow-sm placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 focus:border-brand-primary focus:outline-none">
+            </div>
+            <select name="tipo" aria-label="Filtrar por tipo" class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-brand-primary focus:outline-none">
+                <option value="">Ingreso y salida</option>
+                <option value="ingreso" {% if filtros.tipo == 'ingreso' %}selected{% endif %}>Solo ingresos</option>
+                <option value="salida" {% if filtros.tipo == 'salida' %}selected{% endif %}>Solo salidas</option>
+            </select>
+            <select name="estado" aria-label="Filtrar por estado" class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-brand-primary focus:outline-none">
+                <option value="">Autorizados y denegados</option>
+                <option value="autorizado" {% if filtros.estado == 'autorizado' %}selected{% endif %}>Solo autorizados</option>
+                <option value="denegado" {% if filtros.estado == 'denegado' %}selected{% endif %}>Solo denegados</option>
+            </select>
+            <div class="flex gap-2">
+                <button type="submit" class="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary">Buscar</button>
+                {% if hay_filtros %}<a href="{% url 'qr:movimientos' %}" class="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 no-underline hover:bg-slate-50">Limpiar</a>{% endif %}
+            </div>
+        </form>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[860px] text-left text-sm">
+                <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-5 py-3 lg:px-6">Fecha y hora</th>
+                        <th class="px-3 py-3">Placa</th>
+                        <th class="px-3 py-3">Propietario</th>
+                        <th class="px-3 py-3">Tipo</th>
+                        <th class="px-3 py-3">Estado</th>
+                        <th class="px-3 py-3">Motivo o detalle</th>
+                        <th class="px-5 py-3 lg:px-6">Guardia</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for mov in movimientos %}
+                    <tr class="{% if mov.estado == 'DENEGADO' %}bg-red-50/50{% endif %}">
+                        <td class="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-700 lg:px-6">{{ mov.fecha|date:"d/m/Y H:i:s" }}</td>
+                        <td class="whitespace-nowrap px-3 py-3">{% include 'includes/placa.html' with placa=mov.vehiculo.placa %}</td>
+                        <td class="px-3 py-3">
+                            <p class="font-semibold text-brand-neutral">{{ mov.vehiculo.propietario.nombre }}</p>
+                            <p class="text-xs text-slate-500">{{ mov.vehiculo.marca }} {{ mov.vehiculo.modelo }}</p>
+                        </td>
+                        <td class="px-3 py-3">
+                            <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                <span class="material-symbols-outlined text-base">{% if mov.tipo == 'INGRESO' %}login{% else %}logout{% endif %}</span>{{ mov.get_tipo_display }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3">{% if mov.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Denegado' tono='rojo' %}{% endif %}</td>
+                        <td class="px-3 py-3 {% if mov.estado == 'DENEGADO' %}font-semibold text-red-700{% else %}text-slate-600{% endif %}">{{ mov.detalle|default:"—" }}</td>
+                        <td class="whitespace-nowrap px-5 py-3 text-slate-700 lg:px-6">{{ mov.usuario_validador.get_full_name|default:mov.usuario_validador.username|default:"Sin guardia" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-14 text-center">
+                            <span class="material-symbols-outlined text-4xl text-slate-300">swap_horiz</span>
+                            <p class="mt-2 font-semibold text-slate-600">{% if hay_filtros %}No hay movimientos con esos filtros{% else %}Todavía no hay movimientos registrados{% endif %}</p>
+                            <p class="mt-1 text-sm text-slate-500">{% if hay_filtros %}Prueba con otra placa o quita algún filtro.{% else %}Aparecerán aquí cuando se valide el primer acceso.{% endif %}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'includes/paginacion.html' with nombre='movimientos' %}
+    </section>
 </div>
-<div class="card shadow-sm">
-    <div class="card-body">
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Vehículo</th>
-                    <th>QR</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Validador</th>
-                    <th>Detalle</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for mov in movimientos %}
-                <tr>
-                    <td>{{ mov.fecha|date:"d/m/Y H:i" }}</td>
-                    <td>{{ mov.vehiculo.placa }} - {{ mov.vehiculo.marca }} {{ mov.vehiculo.modelo }}</td>
-                    <td>{{ mov.codigo_qr.contenido }}</td>
-                    <td>{{ mov.get_tipo_display }}</td>
-                    <td>
-                        {% if mov.estado == 'AUTORIZADO' %}
-                            <span class="badge bg-success">Autorizado</span>
-                        {% else %}
-                            <span class="badge bg-danger">Denegado</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if mov.usuario_validador %}
-                            {{ mov.usuario_validador.get_full_name|default:mov.usuario_validador.username }}
-                        {% else %}
-                            Invitado
-                        {% endif %}
-                    </td>
-                    <td>{{ mov.detalle }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-4">No hay movimientos registrados todavía.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-{% if is_paginated %}
-<nav aria-label="Paginación de movimientos" class="mt-4">
-    <ul class="pagination justify-content-center">
-        {% if page_obj.has_previous %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-        {% endif %}
-
-        {% for num in paginator.page_range %}
-            {% if num == page_obj.number %}
-            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
-            {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-            {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
 {% endblock %}

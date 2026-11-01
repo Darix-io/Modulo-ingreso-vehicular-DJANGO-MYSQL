@@ -27,7 +27,7 @@
             </div>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{% url 'qr:movimientos' %}?vehiculo={{ qr.vehiculo.placa|urlencode }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">swap_horiz</span>Ver movimientos</a>
+            <a href="{% url 'qr:movimientos' %}?placa={{ qr.vehiculo.placa|urlencode }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">swap_horiz</span>Ver movimientos</a>
             <a href="{% url 'qr:credencial' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">print</span>Imprimir credencial</a>
             {% if qr.imagen %}<a href="{% url 'qr:descargar' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">download</span>Descargar QR</a>{% endif %}
             {% if user.is_administrador %}
