@@ -37,8 +37,9 @@ apps/qr/
   models.py         Solo tablas y reglas pequeñas del objeto
   signals.py        Crea el QR al registrar un vehículo
   filters.py        Filtros y orden del historial
-  services/         Lógica de negocio: generador, validacion, estadisticas, reportes, codigos
-                    (codigos.py = definición ÚNICA de vigente / por vencer / expirado / inactivo)
+  services/         Lógica de negocio: generador, validacion, estadisticas, reportes, codigos, garita
+                    (codigos.py = definición ÚNICA de vigente / por vencer / expirado / inactivo;
+                    garita.py = accesos recientes de la pantalla Validar acceso)
   views/            Vistas por tema: codigos, accesos, reportes, configuracion
 templates/<modulo>/ Plantillas HTML por módulo      static/  CSS
 ```
@@ -68,6 +69,15 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
 5. `Propietario.estado` activo.
 6. Quien valida inició sesión como Seguridad o Administrador (lo exige la vista).
 
+- El motivo de un vehículo no habilitado dice exactamente «Vehículo suspendido» o «Vehículo no autorizado»
+  (`MOTIVOS_POR_ESTADO`; no usar `get_estado_display()`, que dice «Acceso suspendido»).
+- **Validar por placa** (`validar_por_placa`, respaldo del QR): normaliza la placa (mayúsculas, sin espacios ni guion),
+  aplica las mismas reglas (`_registrar` + `motivo_de_rechazo`) y en un ingreso/salida autorizado guarda el detalle
+  «Validación manual por placa»; en un denegado el detalle es el motivo real. Placa inexistente → «Placa no registrada»
+  (no se guarda movimiento: no hay vehículo ni QR al que ligarlo; igual que «Código no válido»).
+- La pantalla `qr:validar` es una sola, responsive: escáner con `html5-qrcode` (versión fija por CDN; valida una vez por
+  lectura y vuelve con `?token=`), ingreso manual (`?placa=`), último resultado y accesos de hoy (no existe «turno»).
+  Las páginas de resultado reemplazan su dirección con `history.replaceState` para que recargar no registre otro movimiento.
 - Cada intento, autorizado **o denegado**, se guarda en `RegistroMovimiento`.
   `HistorialIngreso` se crea solo en ingresos autorizados.
 - Ingreso y salida **alternan solos**: si el último movimiento autorizado fue INGRESO, el siguiente es SALIDA.
@@ -103,8 +113,8 @@ aplican con los mixins de `apps/core/mixins.py` (`AdminRequiredMixin`,
   `{# #}` es solo de una línea; para varias líneas usar `{% comment %}`.
 - Zona horaria `America/Guayaquil`, `USE_TZ=True`, idioma `es-ec`.
 - Todo cambio de modelo lleva su migración; `makemigrations --check` debe quedar limpio.
-- Toda regla de negocio nueva lleva su prueba en `tests.py` de la app. Las pruebas actuales
-  (19) deben seguir pasando.
+- Toda regla de negocio nueva lleva su prueba en `tests.py` de la app (o en un `tests_<tema>.py`, como
+  `apps/qr/tests_codigos.py` y `tests_validar.py`). Todas las pruebas existentes deben seguir pasando.
 - Dependencias nuevas → agregarlas a `requirements.txt`. No introducir MySQL ni otro motor.
 - Git: trabajar en ramas, mensajes de commit en español, **no hacer push sin que el usuario lo pida**.
 - Nunca versionar secretos ni `.env`.

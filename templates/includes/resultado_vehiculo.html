@@ -1,0 +1,45 @@
+{% comment %}
+Tarjetas de vehículo y propietario de las pantallas de resultado (autorizado y denegado).
+Variables: resultado (ResultadoValidacion) y vigencia (services/codigos.py: vigencia_qr).
+{% endcomment %}
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+    <div class="mb-4 flex items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Vehículo registrado</h2>
+        {% if resultado.vehiculo.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}
+        {% elif resultado.vehiculo.estado == 'SUSPENDIDO' %}{% include 'includes/badge_estado.html' with texto='Suspendido' tono='rojo' %}
+        {% else %}{% include 'includes/badge_estado.html' with texto='No autorizado' tono='gris' %}{% endif %}
+    </div>
+    <div class="flex justify-center">{% include 'includes/placa.html' with placa=resultado.vehiculo.placa grande=True %}</div>
+    <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Vehículo</dt><dd class="mt-0.5 font-semibold text-brand-neutral">{{ resultado.vehiculo.marca }} {{ resultado.vehiculo.modelo }}</dd></div>
+        <div class="rounded-xl bg-slate-50 p-3"><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Color{% if resultado.vehiculo.anio %} / Año{% endif %}</dt><dd class="mt-0.5 font-semibold text-brand-neutral">{{ resultado.vehiculo.color }}{% if resultado.vehiculo.anio %} · {{ resultado.vehiculo.anio }}{% endif %}</dd></div>
+    </dl>
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">Propietario</h2>
+    <div class="flex items-center gap-3">
+        {% include 'includes/avatar.html' with nombre=resultado.vehiculo.propietario.nombre %}
+        <div class="min-w-0 flex-1">
+            <p class="truncate font-semibold text-brand-neutral">{{ resultado.vehiculo.propietario.nombre }}</p>
+            <p class="text-sm text-slate-500"><span class="font-mono">{{ resultado.vehiculo.propietario.numero_identidad }}</span></p>
+        </div>
+        <span class="shrink-0 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold uppercase text-slate-700">{{ resultado.vehiculo.propietario.tipo }}</span>
+    </div>
+    <dl class="mt-4 space-y-2 rounded-xl bg-slate-50 p-3 text-sm">
+        <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Propietario</dt>
+            <dd>{% if resultado.vehiculo.propietario.estado %}{% include 'includes/badge_estado.html' with texto='Activo' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Inactivo' tono='rojo' %}{% endif %}</dd>
+        </div>
+        {% if vigencia %}
+        <div class="flex items-center justify-between gap-3">
+            <dt class="text-slate-500">Credencial QR</dt>
+            <dd class="text-right font-semibold {% if vigencia.clave == 'expirado' %}text-red-700{% elif vigencia.clave == 'por_vencer' %}text-amber-700{% elif vigencia.clave == 'inactivo' %}text-slate-600{% else %}text-emerald-700{% endif %}">
+                {% if vigencia.clave == 'expirado' %}Expirada el {{ resultado.codigo_qr.fecha_expiracion|date:"d/m/Y" }}
+                {% elif vigencia.clave == 'inactivo' %}Desactivada
+                {% else %}Vigente · {{ vigencia.dias_restantes }} día{{ vigencia.dias_restantes|pluralize }} restante{{ vigencia.dias_restantes|pluralize }}{% endif %}
+            </dd>
+        </div>
+        {% endif %}
+    </dl>
+</section>

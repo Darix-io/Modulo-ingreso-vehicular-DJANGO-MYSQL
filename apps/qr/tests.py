@@ -83,7 +83,7 @@ class ValidarAccesoTests(TestCase):
         self.client.force_login(self.guardia)
 
         respuesta = self.validar()
-        self.assertContains(respuesta, 'Acceso Autorizado')
+        self.assertContains(respuesta, 'Ingreso autorizado')
         self.assertEqual(HistorialIngreso.objects.count(), 1)
 
         self.validar()

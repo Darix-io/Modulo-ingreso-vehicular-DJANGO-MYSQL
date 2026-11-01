@@ -7,24 +7,40 @@ from apps.core.mixins import SeguridadOAdminRequiredMixin
 
 from ..filters import filtrar_historial, orden_alterno, orden_seguro
 from ..models import RegistroMovimiento
-from ..services.validacion import validar_acceso
+from ..services.codigos import vigencia_qr
+from ..services.garita import ultimos_accesos
+from ..services.validacion import validar_acceso, validar_por_placa
 
 
 class ValidarAccesoView(SeguridadOAdminRequiredMixin, View):
     """
-    Pantalla de la garita. Ahora EXIGE iniciar sesión: antes cualquier persona
-    con el enlace del QR podía registrar ingresos sin ser guardia.
+    Pantalla de la garita. Exige iniciar sesión: antes cualquier persona con el
+    enlace del QR podía registrar ingresos sin ser guardia.
+    Sin parámetros muestra el escáner y el ingreso manual; con `?token=` (QR) o
+    `?placa=` (respaldo manual) valida y muestra el resultado.
     Toda la lógica está en services/validacion.py
     """
 
     def get(self, request):
         token = request.GET.get('token')
-        if not token:
-            return render(request, 'qr/validar.html', {'resultado': None})
+        placa = request.GET.get('placa')
 
-        resultado = validar_acceso(token, request.user)
+        if token:
+            return self.resultado(request, validar_acceso(token, request.user))
+        if placa is not None and placa.strip():
+            return self.resultado(request, validar_por_placa(placa, request.user))
+
+        accesos = ultimos_accesos()
+        return render(request, 'qr/validar.html', {
+            'ultimo_acceso': accesos[0] if accesos else None,
+            'accesos_recientes': accesos,
+            'error_placa': 'Escribe la placa del vehículo.' if placa is not None else '',
+        })
+
+    def resultado(self, request, resultado):
         plantilla = 'qr/validar_success.html' if resultado.autorizado else 'qr/validar_failure.html'
-        return render(request, plantilla, {'resultado': resultado})
+        vigencia = vigencia_qr(resultado.codigo_qr) if resultado.codigo_qr else None
+        return render(request, plantilla, {'resultado': resultado, 'vigencia': vigencia})
 
 
 class RegistroMovimientoListView(SeguridadOAdminRequiredMixin, ListView):

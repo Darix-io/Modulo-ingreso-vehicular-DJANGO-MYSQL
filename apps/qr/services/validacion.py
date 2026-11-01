@@ -1,12 +1,11 @@
 """
-Reglas de CONTROL DE ACCESO (validar un QR en la garita).
+Reglas de CONTROL DE ACCESO (validar un QR, o la placa a mano, en la garita).
 
-Flujo:
-    1. Limpiar el texto escaneado y obtener el token (UUID).
-    2. Buscar el código QR.
-    3. Decidir si es INGRESO o SALIDA (alterna según el último movimiento autorizado).
-    4. Revisar todas las reglas. Si alguna falla -> DENEGADO.
-    5. Guardar el movimiento (y el historial si es un ingreso autorizado).
+Flujo (igual para el QR y para la placa; solo cambia cómo se encuentra el código):
+    1. Encontrar el código QR: por el token escaneado o por la placa escrita.
+    2. Decidir si es INGRESO o SALIDA (alterna según el último movimiento autorizado).
+    3. Revisar todas las reglas (`motivo_de_rechazo`). Si alguna falla -> DENEGADO.
+    4. Guardar el movimiento (y el historial si es un ingreso autorizado).
 
 Correcciones respecto a la versión anterior:
     - Un vehículo SUSPENDIDO o NO AUTORIZADO ya no puede entrar.
@@ -15,16 +14,23 @@ Correcciones respecto a la versión anterior:
     - Todo se guarda dentro de una transacción.
 """
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 from django.db import transaction
+from django.db.models import Value
+from django.db.models.functions import Replace
+from django.utils import timezone
 
 from apps.vehiculos.models import Vehiculo
 
 from ..models import CodigoQR, ConfiguracionQR, HistorialIngreso, RegistroMovimiento
 
+CODIGO_NO_VALIDO = 'Código no válido'
+PLACA_NO_REGISTRADA = 'Placa no registrada'
+DETALLE_MANUAL = 'Validación manual por placa'
 
 # Texto del motivo según el estado del vehículo (no se usa get_estado_display: dice "Acceso suspendido")
 MOTIVOS_POR_ESTADO = {
@@ -35,17 +41,19 @@ MOTIVOS_POR_ESTADO = {
 
 @dataclass
 class ResultadoValidacion:
-    """Lo que la vista necesita para mostrar la pantalla de éxito o error."""
+    """Lo que la vista necesita para mostrar la pantalla de éxito o de rechazo."""
     autorizado: bool
     mensaje: str
     vehiculo: Optional[Vehiculo] = None
     tipo: Optional[str] = None
     movimiento: Optional[RegistroMovimiento] = None
+    codigo_qr: Optional[CodigoQR] = None
+    manual: bool = False
+    fecha: datetime = field(default_factory=timezone.now)
 
     @property
-    def status(self):
-        # Las plantillas usan 'success' / 'danger' (clases de Bootstrap)
-        return 'success' if self.autorizado else 'danger'
+    def es_ingreso(self):
+        return self.tipo == RegistroMovimiento.INGRESO
 
 
 def extraer_token(texto):
@@ -66,6 +74,11 @@ def extraer_token(texto):
         return str(uuid.UUID(texto))
     except (ValueError, AttributeError):
         return None
+
+
+def normalizar_placa(texto):
+    """'gsa 3841' -> 'GSA3841' (mayúsculas, sin espacios ni guion), para comparar sin importar cómo se escribió."""
+    return ''.join(str(texto or '').split()).replace('-', '').upper()
 
 
 def siguiente_tipo_movimiento(codigo_qr):
@@ -98,11 +111,55 @@ def motivo_de_rechazo(codigo_qr, configuracion):
     return None
 
 
+def _registrar(codigo_qr, usuario, manual=False):
+    """Aplica las reglas a un código ya encontrado y guarda el movimiento (QR y placa comparten esto)."""
+    configuracion = ConfiguracionQR.get_solo()
+    tipo = siguiente_tipo_movimiento(codigo_qr)
+    validador = usuario if usuario.is_authenticated else None
+    motivo = motivo_de_rechazo(codigo_qr, configuracion)
+    vehiculo = codigo_qr.vehiculo
+
+    with transaction.atomic():
+        if codigo_qr.is_expired and codigo_qr.activo:
+            codigo_qr.activo = False
+            codigo_qr.save(update_fields=['activo'])
+
+        if motivo:
+            # En los denegados el detalle es SIEMPRE el motivo real (así Movimientos y el panel los agrupan)
+            movimiento = RegistroMovimiento.objects.create(
+                codigo_qr=codigo_qr, vehiculo=vehiculo, tipo=tipo,
+                estado=RegistroMovimiento.DENEGADO, usuario_validador=validador, detalle=motivo,
+            )
+            return ResultadoValidacion(
+                autorizado=False, mensaje=motivo, vehiculo=vehiculo, tipo=tipo,
+                movimiento=movimiento, codigo_qr=codigo_qr, manual=manual, fecha=movimiento.fecha,
+            )
+
+        es_ingreso = tipo == RegistroMovimiento.INGRESO
+        if manual:
+            detalle = DETALLE_MANUAL
+        else:
+            detalle = 'Acceso autorizado' if es_ingreso else 'Salida autorizada'
+        movimiento = RegistroMovimiento.objects.create(
+            codigo_qr=codigo_qr, vehiculo=vehiculo, tipo=tipo,
+            estado=RegistroMovimiento.AUTORIZADO, usuario_validador=validador, detalle=detalle,
+        )
+        if es_ingreso:
+            HistorialIngreso.objects.create(vehiculo=vehiculo, usuario_validador=validador)
+
+    return ResultadoValidacion(
+        autorizado=True,
+        mensaje='Ingreso autorizado' if es_ingreso else 'Salida autorizada',
+        vehiculo=vehiculo, tipo=tipo, movimiento=movimiento, codigo_qr=codigo_qr,
+        manual=manual, fecha=movimiento.fecha,
+    )
+
+
 def validar_acceso(texto_escaneado, usuario):
-    """Punto de entrada que usa la vista. Siempre devuelve un ResultadoValidacion."""
+    """Valida un QR escaneado. Siempre devuelve un ResultadoValidacion."""
     token = extraer_token(texto_escaneado)
     if token is None:
-        return ResultadoValidacion(autorizado=False, mensaje='Código no válido')
+        return ResultadoValidacion(autorizado=False, mensaje=CODIGO_NO_VALIDO)
 
     try:
         codigo_qr = (
@@ -111,47 +168,27 @@ def validar_acceso(texto_escaneado, usuario):
             .get(contenido=token)
         )
     except CodigoQR.DoesNotExist:
-        return ResultadoValidacion(autorizado=False, mensaje='Código no válido')
+        return ResultadoValidacion(autorizado=False, mensaje=CODIGO_NO_VALIDO)
 
-    configuracion = ConfiguracionQR.get_solo()
-    tipo = siguiente_tipo_movimiento(codigo_qr)
-    validador = usuario if usuario.is_authenticated else None
-    motivo = motivo_de_rechazo(codigo_qr, configuracion)
+    return _registrar(codigo_qr, usuario)
 
-    with transaction.atomic():
-        if codigo_qr.is_expired and codigo_qr.activo:
-            codigo_qr.activo = False
-            codigo_qr.save(update_fields=['activo'])
 
-        if motivo:
-            RegistroMovimiento.objects.create(
-                codigo_qr=codigo_qr,
-                vehiculo=codigo_qr.vehiculo,
-                tipo=tipo,
-                estado=RegistroMovimiento.DENEGADO,
-                usuario_validador=validador,
-                detalle=motivo,
-            )
-            return ResultadoValidacion(
-                autorizado=False, mensaje=motivo, vehiculo=codigo_qr.vehiculo, tipo=tipo,
-            )
-
-        es_ingreso = tipo == RegistroMovimiento.INGRESO
-        movimiento = RegistroMovimiento.objects.create(
-            codigo_qr=codigo_qr,
-            vehiculo=codigo_qr.vehiculo,
-            tipo=tipo,
-            estado=RegistroMovimiento.AUTORIZADO,
-            usuario_validador=validador,
-            detalle='Acceso autorizado' if es_ingreso else 'Salida autorizada',
+def validar_por_placa(placa, usuario):
+    """
+    Respaldo cuando el QR está dañado: mismas reglas que `validar_acceso`.
+    Si la placa no existe no se guarda nada (un movimiento necesita un vehículo y su QR).
+    """
+    buscada = normalizar_placa(placa)
+    codigo_qr = None
+    if buscada:
+        codigo_qr = (
+            CodigoQR.objects
+            .select_related('vehiculo__propietario')
+            .annotate(placa_limpia=Replace('vehiculo__placa', Value('-'), Value('')))
+            .filter(placa_limpia__iexact=buscada)
+            .first()
         )
-        if es_ingreso:
-            HistorialIngreso.objects.create(vehiculo=codigo_qr.vehiculo, usuario_validador=validador)
+    if codigo_qr is None:
+        return ResultadoValidacion(autorizado=False, mensaje=PLACA_NO_REGISTRADA, manual=True)
 
-    return ResultadoValidacion(
-        autorizado=True,
-        mensaje='Ingreso Autorizado' if es_ingreso else 'Salida Autorizada',
-        vehiculo=codigo_qr.vehiculo,
-        tipo=tipo,
-        movimiento=movimiento,
-    )
+    return _registrar(codigo_qr, usuario, manual=True)

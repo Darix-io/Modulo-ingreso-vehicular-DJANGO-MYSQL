@@ -1,31 +1,241 @@
 {% extends 'base.html' %}
+{% load ui %}
+
+{% block title %}Validar acceso{% endblock %}
+{% block legacy_css %}{% endblock %}
+{% block legacy_js %}{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 text-center">
-        <h2 class="mb-4">Control de Acceso</h2>
-
-        <form method="get" action="{% url 'qr:validar' %}" class="mb-4">
-            <div class="mb-3 text-start">
-                <label for="token" class="form-label">Código QR / Token</label>
-                <input id="token" name="token" type="text" class="form-control form-control-lg" placeholder="Pega aquí el token del QR" value="{{ request.GET.token|default_if_none:'' }}" autocomplete="off" autofocus>
+<div class="mx-auto max-w-6xl space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
+            <a href="{% url 'usuarios:dashboard' %}" class="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-primary no-underline hover:underline lg:hidden">
+                <span class="material-symbols-outlined text-xl">arrow_back</span>Volver al menú
+            </a>
+            <h1 class="font-headline text-2xl font-bold text-brand-neutral sm:text-3xl">Validar acceso vehicular</h1>
+            <p class="mt-1 text-sm text-slate-500">Escanea el QR de la credencial o, si no se puede leer, valida la placa a mano.</p>
+        </div>
+        <div class="w-full sm:w-72 sm:shrink-0">
+            <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-soft">
+                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">{{ user.get_full_name|default:user.username|iniciales }}</span>
+                <div class="min-w-0 flex-1 leading-tight">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Guardia en turno</p>
+                    <p class="truncate text-sm font-semibold text-brand-neutral">{{ user.get_full_name|default:user.username }}</p>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary btn-lg">Validar</button>
-        </form>
-
-        {% if resultado %}
-            <div class="alert alert-{{ resultado.status }} p-4 shadow">
-                <h3>{{ resultado.mensaje }}</h3>
-                {% if resultado.vehiculo %}
-                    <hr>
-                    <p><strong>Placa:</strong> {{ resultado.vehiculo.placa }}</p>
-                    <p><strong>Vehículo:</strong> {{ resultado.vehiculo.marca }} {{ resultado.vehiculo.modelo }}</p>
-                {% endif %}
-            </div>
-        {% else %}
-            <p class="text-muted">Escanea el QR y pega el token aquí si no se abre automáticamente.</p>
-        {% endif %}
-
-        <a href="{% url 'qr:validar' %}" class="btn btn-secondary mt-3">Limpiar</a>
+        </div>
     </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        {# ---------- Escáner ---------- #}
+        <section class="flex lg:col-span-3" aria-label="Escáner de códigos QR">
+            <div class="relative w-full overflow-hidden rounded-2xl bg-slate-950 shadow-soft">
+                <div class="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white">
+                    <span id="lector-punto" class="h-2 w-2 rounded-full bg-amber-400"></span>
+                    <span id="lector-estado">Iniciando cámara…</span>
+                </div>
+                <div id="lector" class="min-h-[20rem] w-full sm:min-h-[26rem]"></div>
+
+                <div id="lector-error" class="absolute inset-0 z-20 hidden flex-col items-center justify-center gap-3 bg-slate-950 p-6 text-center" role="alert">
+                    <span class="material-symbols-outlined text-5xl text-amber-400">videocam_off</span>
+                    <p id="lector-mensaje" class="max-w-sm text-sm font-medium text-white"></p>
+                    <p class="max-w-sm text-xs text-slate-300">Puedes seguir validando con la placa, en el recuadro de ingreso manual.</p>
+                    <button id="lector-reintentar" type="button" class="mt-1 inline-flex items-center gap-2 rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+                        <span class="material-symbols-outlined text-xl">refresh</span>Reintentar cámara
+                    </button>
+                </div>
+
+                <p id="lector-ayuda" class="pointer-events-none absolute inset-x-0 bottom-4 z-10 text-center">
+                    <span class="inline-block rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-amber-300">Enfoque el código QR dentro del marco</span>
+                </p>
+            </div>
+        </section>
+
+        {# ---------- Ingreso manual y último resultado ---------- #}
+        <div class="space-y-6 lg:col-span-2">
+            <section id="placa" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+                <div class="flex items-center justify-between gap-3">
+                    <h2 class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
+                        <span class="material-symbols-outlined text-xl">keyboard</span>Ingreso manual por placa
+                    </h2>
+                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase text-slate-500">Respaldo</span>
+                </div>
+                <p class="mt-2 text-sm text-slate-500">Úsalo si el QR está dañado o el conductor no tiene la credencial. Se aplican las mismas reglas que con el QR.</p>
+
+                <form method="get" action="{% url 'qr:validar' %}" class="mt-4" id="form-placa">
+                    <label for="id_placa" class="sr-only">Placa del vehículo</label>
+                    <div class="overflow-hidden rounded-lg border-2 {% if error_placa %}border-red-400{% else %}border-brand-primary{% endif %} bg-white">
+                        <span class="block bg-brand-primary py-1 text-center text-[10px] font-bold uppercase tracking-[0.35em] text-white">Ecuador</span>
+                        <input id="id_placa" name="placa" type="text" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                               placeholder="GSA-3841" {% if error_placa %}aria-invalid="true"{% endif %}
+                               class="block w-full border-0 bg-white px-3 py-3 text-center font-mono text-2xl font-bold uppercase tracking-[0.12em] text-brand-neutral placeholder:text-slate-300 focus:outline-none focus:ring-0">
+                    </div>
+                    {% if error_placa %}<p class="mt-2 text-sm font-medium text-red-700">{{ error_placa }}</p>{% endif %}
+                    <button type="submit" id="boton-placa" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-secondary-container px-4 py-3 text-sm font-bold text-on-secondary-container hover:brightness-95">
+                        <span class="material-symbols-outlined text-xl">search</span>Consultar y validar placa
+                    </button>
+                </form>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft" aria-label="Último acceso procesado">
+                {% if ultimo_acceso %}
+                {% with m=ultimo_acceso %}
+                <div class="flex items-center justify-between gap-3 px-5 py-3 {% if m.estado == 'AUTORIZADO' %}bg-emerald-50{% else %}bg-red-50{% endif %}">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-3xl {% if m.estado == 'AUTORIZADO' %}text-emerald-600{% else %}text-red-600{% endif %}">{% if m.estado == 'AUTORIZADO' %}check_circle{% else %}block{% endif %}</span>
+                        <div class="leading-tight">
+                            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Último acceso procesado</p>
+                            <p class="text-lg font-bold {% if m.estado == 'AUTORIZADO' %}text-emerald-800{% else %}text-red-800{% endif %}">{{ m.get_estado_display|upper }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right leading-tight">
+                        <p class="font-mono text-sm font-semibold text-brand-neutral">{{ m.fecha|date:"H:i:s" }}</p>
+                        <p class="text-xs text-slate-500">Hoy</p>
+                    </div>
+                </div>
+                <div class="space-y-4 p-5">
+                    {% include 'includes/placa.html' with placa=m.vehiculo.placa %}
+                    <div class="flex items-center gap-3">
+                        {% include 'includes/avatar.html' with nombre=m.vehiculo.propietario.nombre %}
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-semibold text-brand-neutral">{{ m.vehiculo.propietario.nombre }}</p>
+                            <p class="text-xs text-slate-500">{{ m.vehiculo.propietario.tipo }} · <span class="font-mono">{{ m.vehiculo.propietario.numero_identidad }}</span></p>
+                        </div>
+                    </div>
+                    <dl class="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-sm">
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Vehículo</dt><dd class="font-medium text-brand-neutral">{{ m.vehiculo.marca }} {{ m.vehiculo.modelo }}</dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Color</dt><dd class="font-medium text-brand-neutral">{{ m.vehiculo.color }}</dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Movimiento</dt><dd class="font-medium text-brand-neutral">{{ m.get_tipo_display }}</dd></div>
+                        <div><dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Guardia</dt><dd class="truncate font-medium text-brand-neutral">{{ m.usuario_validador.get_full_name|default:m.usuario_validador.username|default:"—" }}</dd></div>
+                    </dl>
+                    {% if m.estado != 'AUTORIZADO' %}<p class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800">Motivo: {{ m.detalle }}</p>{% endif %}
+                </div>
+                {% endwith %}
+                {% else %}
+                <div class="p-8 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-300">history</span>
+                    <p class="mt-2 text-sm font-semibold text-slate-600">Todavía no hay accesos hoy</p>
+                    <p class="mt-1 text-xs text-slate-500">El resultado de cada validación aparecerá aquí.</p>
+                </div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+
+    {# ---------- Últimos accesos de hoy ---------- #}
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft" aria-label="Últimos accesos de hoy">
+        <div class="mb-4 flex items-center justify-between gap-3">
+            <h2 class="flex items-center gap-2 text-base font-semibold text-brand-neutral"><span class="material-symbols-outlined text-xl text-slate-500">schedule</span>Últimos accesos de hoy</h2>
+            <a href="{% url 'qr:movimientos' %}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-primary no-underline hover:underline">Ver todos<span class="material-symbols-outlined text-lg">chevron_right</span></a>
+        </div>
+        {% if accesos_recientes %}
+        <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {% for m in accesos_recientes %}
+            <li class="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
+                <span class="flex w-10 shrink-0 flex-col items-center text-[10px] font-bold uppercase {% if m.tipo == 'INGRESO' %}text-emerald-700{% else %}text-slate-600{% endif %}">
+                    <span class="material-symbols-outlined text-xl">{% if m.tipo == 'INGRESO' %}login{% else %}logout{% endif %}</span>{{ m.get_tipo_display|slice:":3" }}
+                </span>
+                <div class="min-w-0 flex-1 leading-tight">
+                    <p class="font-mono text-sm font-bold text-brand-neutral">{{ m.vehiculo.placa }}</p>
+                    <p class="truncate text-xs text-slate-500">{{ m.vehiculo.propietario.nombre }}</p>
+                </div>
+                <div class="shrink-0 text-right leading-tight">
+                    <p class="font-mono text-xs text-slate-600">{{ m.fecha|date:"H:i:s" }}</p>
+                    {% if m.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Denegado' tono='rojo' %}{% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="py-4 text-center text-sm text-slate-500">Aún no se ha validado ningún vehículo hoy.</p>
+        {% endif %}
+    </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{# Versión fija de la librería del escáner. La cámara solo funciona en localhost o con HTTPS. #}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+    const urlValidar = "{% url 'qr:validar' %}";
+    const punto = document.getElementById('lector-punto');
+    const estado = document.getElementById('lector-estado');
+    const panelError = document.getElementById('lector-error');
+    const mensaje = document.getElementById('lector-mensaje');
+    const ayuda = document.getElementById('lector-ayuda');
+    let lector = null;
+    let yaLeido = false;   // la cámara lee el mismo QR varias veces por segundo: solo se valida la primera
+
+    function mostrarError(texto) {
+        mensaje.textContent = texto;
+        panelError.classList.remove('hidden');
+        panelError.classList.add('flex');
+        ayuda.classList.add('hidden');
+        punto.className = 'h-2 w-2 rounded-full bg-red-500';
+        estado.textContent = 'Cámara no disponible';
+    }
+
+    function describirError(error) {
+        const texto = String((error && (error.name || error.message)) || error).toLowerCase();
+        if (texto.includes('notallowed') || texto.includes('permission') || texto.includes('denied')) {
+            return 'El navegador no tiene permiso para usar la cámara. Permítela en el candado de la barra de direcciones y pulsa «Reintentar cámara».';
+        }
+        if (texto.includes('notfound') || texto.includes('no camera') || texto.includes('requested device not found')) {
+            return 'No se encontró ninguna cámara en este equipo.';
+        }
+        if (texto.includes('notreadable') || texto.includes('in use')) {
+            return 'La cámara está siendo usada por otra aplicación. Ciérrala y pulsa «Reintentar cámara».';
+        }
+        return 'No se pudo iniciar la cámara.';
+    }
+
+    function alLeer(texto) {
+        if (yaLeido) { return; }
+        yaLeido = true;
+        punto.className = 'h-2 w-2 rounded-full bg-emerald-400';
+        estado.textContent = 'Código leído, validando…';
+        const ir = function () { window.location.href = urlValidar + '?token=' + encodeURIComponent(texto); };
+        if (lector) { lector.stop().then(ir, ir); } else { ir(); }
+    }
+
+    function iniciar() {
+        panelError.classList.add('hidden');
+        panelError.classList.remove('flex');
+        ayuda.classList.remove('hidden');
+        punto.className = 'h-2 w-2 rounded-full bg-amber-400';
+        estado.textContent = 'Iniciando cámara…';
+
+        if (!window.Html5Qrcode) { mostrarError('No se pudo cargar el lector de QR (revisa la conexión a internet).'); return; }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            mostrarError('Este navegador no permite usar la cámara en esta dirección. Funciona en localhost o con HTTPS.');
+            return;
+        }
+
+        lector = lector || new Html5Qrcode('lector');
+        const configuracion = {
+            fps: 10,
+            qrbox: function (ancho, alto) { const lado = Math.floor(Math.min(ancho, alto) * 0.7); return { width: lado, height: lado }; },
+        };
+        lector.start({ facingMode: 'environment' }, configuracion, alLeer, function () {})
+            .then(function () {
+                punto.className = 'h-2 w-2 rounded-full bg-emerald-400';
+                estado.textContent = 'Lector QR activo';
+            })
+            .catch(function (error) { mostrarError(describirError(error)); });
+    }
+
+    document.getElementById('lector-reintentar').addEventListener('click', iniciar);
+    iniciar();
+
+    // Placa en mayúsculas mientras se escribe; el botón se bloquea para no validar dos veces
+    const campo = document.getElementById('id_placa');
+    campo.addEventListener('input', function () { campo.value = campo.value.toUpperCase(); });
+    document.getElementById('form-placa').addEventListener('submit', function () {
+        document.getElementById('boton-placa').disabled = true;
+    });
+    // Si el navegador restaura la página al volver atrás, el botón vuelve a estar disponible
+    window.addEventListener('pageshow', function () { document.getElementById('boton-placa').disabled = false; });
+})();
+</script>
 {% endblock %}
