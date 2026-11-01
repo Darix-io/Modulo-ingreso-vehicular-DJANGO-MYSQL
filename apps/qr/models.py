@@ -1,17 +1,23 @@
+"""
+Modelos de la app QR.
+
+Este archivo ahora SOLO define tablas y reglas pequeñas de cada objeto.
+- La creación de la imagen QR está en services/generador.py
+- La validación de acceso está en services/validacion.py
+- La señal que crea el QR al registrar un vehículo está en signals.py
+"""
 import uuid
-import qrcode
-from io import BytesIO
-from django.core.files import File
-from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.utils import timezone
 from datetime import timedelta
+
 from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
 from apps.vehiculos.models import Vehiculo
 
 
 class ConfiguracionQR(models.Model):
+    """Configuración única del sistema (siempre es el registro id=1)."""
     nombre = models.CharField(max_length=100, default='Configuración QR')
     descripcion = models.TextField(blank=True, null=True)
     expiration_days = models.PositiveIntegerField(default=30)
@@ -28,7 +34,7 @@ class ConfiguracionQR(models.Model):
 
     @classmethod
     def get_solo(cls):
-        obj, created = cls.objects.get_or_create(id=1)
+        obj, _ = cls.objects.get_or_create(id=1)
         return obj
 
 
@@ -41,74 +47,58 @@ class CodigoQR(models.Model):
     fecha_expiracion = models.DateTimeField()
     activo = models.BooleanField(default=True)
 
-    def save(self, *args, **kwargs):
-        config = ConfiguracionQR.get_solo()
-        if not self.fecha_expiracion:
-            self.fecha_expiracion = timezone.now() + timedelta(days=config.expiration_days)
-            
-        if not self.imagen:
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            contenido = str(self.contenido)
-            base_url = getattr(settings, 'VALIDACION_URL_BASE', '').rstrip('/')
-            if base_url:
-                qr_data = f"{base_url}/qr/validar/?token={contenido}"
-            else:
-                qr_data = contenido
-            qr.add_data(qr_data)
-            qr.make(fit=True)
-            
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            buffer = BytesIO()
-            img.save(buffer, format="PNG")
-            buffer.seek(0)
-            
-            nombre_archivo = f'qr_{self.vehiculo.placa}_{contenido[:8]}.png'
-            self.imagen.save(nombre_archivo, File(buffer), save=False)
-            
-        if self.fecha_expiracion and self.fecha_expiracion <= timezone.now():
-            self.activo = False
+    class Meta:
+        verbose_name = 'Código QR'
+        verbose_name_plural = 'Códigos QR'
+        db_table = 'codigo_qr'
 
+    def __str__(self):
+        return f"QR {self.vehiculo.placa} - {'Activo' if self.activo else 'Inactivo'}"
+
+    @staticmethod
+    def calcular_expiracion():
+        dias = ConfiguracionQR.get_solo().expiration_days
+        return timezone.now() + timedelta(days=dias)
+
+    def save(self, *args, **kwargs):
+        # Import aquí para evitar importaciones circulares (services importa models)
+        from .services.generador import generar_imagen_qr
+
+        if not self.fecha_expiracion:
+            self.fecha_expiracion = self.calcular_expiracion()
+        if not self.imagen:
+            generar_imagen_qr(self)
+        if self.is_expired:
+            self.activo = False
         super().save(*args, **kwargs)
 
     def renovar(self):
+        """Genera un token nuevo, una imagen nueva y reinicia la fecha de expiración."""
         self.contenido = uuid.uuid4()
         if self.imagen:
             self.imagen.delete(save=False)
             self.imagen = None
-        config = ConfiguracionQR.get_solo()
-        self.fecha_expiracion = timezone.now() + timedelta(days=config.expiration_days)
+        self.fecha_expiracion = self.calcular_expiracion()
         self.activo = True
         self.save()
 
     @property
     def is_expired(self):
-        return self.fecha_expiracion <= timezone.now()
+        return bool(self.fecha_expiracion) and self.fecha_expiracion <= timezone.now()
 
-    def __str__(self):
-        return f"QR {self.vehiculo.placa} - {'Activo' if self.activo else 'Inactivo'}"
-
-    class Meta:
-        verbose_name = "Código QR"
-        verbose_name_plural = "Códigos QR"
-        db_table = "codigo_qr"
 
 class HistorialIngreso(models.Model):
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE)
     fecha_ingreso = models.DateTimeField(auto_now_add=True)
-    # Cambiamos 'auth.User' por settings.AUTH_USER_MODEL
     usuario_validador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
 
     class Meta:
-        verbose_name = "Historial de Ingreso"
-        db_table = "historial_ingreso"
+        verbose_name = 'Historial de Ingreso'
+        db_table = 'historial_ingreso'
         ordering = ['-fecha_ingreso']
 
+    def __str__(self):
+        return f'{self.vehiculo.placa} - {self.fecha_ingreso:%d/%m/%Y %H:%M}'
 
 
 class RegistroMovimiento(models.Model):
@@ -142,9 +132,4 @@ class RegistroMovimiento(models.Model):
         ordering = ['-fecha']
 
     def __str__(self):
-        return f"{self.get_tipo_display()} - {self.vehiculo.placa} ({self.get_estado_display()})"
-
-@receiver(post_save, sender=Vehiculo)
-def crear_codigo_qr(sender, instance, created, **kwargs):
-    if created:
-        CodigoQR.objects.create(vehiculo=instance)
+        return f'{self.get_tipo_display()} - {self.vehiculo.placa} ({self.get_estado_display()})'

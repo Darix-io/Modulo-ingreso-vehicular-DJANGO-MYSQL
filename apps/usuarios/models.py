@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
 
+from apps.core.roles import ADMINISTRADOR, PERSONAL_SEGURIDAD
+
 
 class Rol(models.Model):
     nombre = models.CharField(max_length=50, unique=True)
@@ -34,20 +36,20 @@ class Usuario(AbstractUser):
         return self.rol.nombre if self.rol else None
 
     def is_administrador(self):
-        return self.is_superuser or self.role_name == 'Administrador'
+        return self.is_superuser or self.role_name == ADMINISTRADOR
 
     def is_personal_seguridad(self):
-        return self.is_superuser or self.role_name == 'Personal Seguridad'
+        return self.is_superuser or self.role_name == PERSONAL_SEGURIDAD
 
 
 class AdministradorManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(rol__nombre='Administrador')
+        return super().get_queryset().filter(rol__nombre=ADMINISTRADOR)
 
 
 class PersonalSeguridadManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(rol__nombre='Personal Seguridad')
+        return super().get_queryset().filter(rol__nombre=PERSONAL_SEGURIDAD)
 
 
 class Administrador(Usuario):

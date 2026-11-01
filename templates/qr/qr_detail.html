@@ -47,9 +47,13 @@
             <a href="{% url 'qr:descargar' qr.pk %}" class="btn btn-success">
                 <i class="fa-solid fa-download"></i> Descargar QR
             </a>
-            <a href="{% url 'qr:renovar' qr.pk %}" class="btn btn-warning">
-                <i class="fa-solid fa-sync"></i> Renovar QR
-            </a>
+            <form method="post" action="{% url 'qr:renovar' qr.pk %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn btn-warning">
+                    <i class="fa-solid fa-sync"></i> Renovar QR
+                </button>
+            </form>
             <a href="{% url 'qr:movimientos' %}?vehiculo={{ qr.vehiculo.placa }}" class="btn btn-info text-white">
                 <i class="fa-solid fa-arrows-spin"></i> Ver Movimientos del Vehículo
             </a>

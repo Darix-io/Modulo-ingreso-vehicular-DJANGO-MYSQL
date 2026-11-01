@@ -1,5 +1,25 @@
+# Entorno virtual
 venv/
+.venv/
+env/
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Variables secretas
 .env
+
+# Archivos que se generan solos (NO se suben)
 media/
+staticfiles/
+db.sqlite3
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db

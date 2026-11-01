@@ -66,14 +66,20 @@
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
                                 {% if vehiculo.estado != 'AUTORIZADO' %}
-                                <a href="{% url 'vehiculos:activar' vehiculo.pk %}" class="btn btn-sm btn-outline-success" title="Activar">
-                                    <i class="fa-solid fa-check"></i>
-                                </a>
+                                <form method="post" action="{% url 'vehiculos:activar' vehiculo.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Activar">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
                                 {% endif %}
                                 {% if vehiculo.estado != 'NO_AUTORIZADO' %}
-                                <a href="{% url 'vehiculos:desactivar' vehiculo.pk %}" class="btn btn-sm btn-outline-warning" title="Desactivar">
-                                    <i class="fa-solid fa-ban"></i>
-                                </a>
+                                <form method="post" action="{% url 'vehiculos:desactivar' vehiculo.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </button>
+                                </form>
                                 {% endif %}
                                 <a href="{% url 'vehiculos:eliminar' vehiculo.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                     <i class="fa-solid fa-trash"></i>

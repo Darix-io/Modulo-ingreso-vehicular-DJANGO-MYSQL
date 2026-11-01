@@ -46,7 +46,10 @@
                             <div class="btn-group" role="group">
                                 <a href="{% url 'qr:detalle' qr.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
                                 <a href="{% url 'qr:descargar' qr.pk %}" class="btn btn-sm btn-outline-success">Descargar</a>
-                                <a href="{% url 'qr:renovar' qr.pk %}" class="btn btn-sm btn-warning">Renovar</a>
+                                <form method="post" action="{% url 'qr:renovar' qr.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-warning">Renovar</button>
+                                </form>
                             </div>
                         </td>
                     </tr>

@@ -75,13 +75,19 @@
                                     <i class="fa-solid fa-pen"></i>
                                 </a>
                                 {% if not propietario.estado %}
-                                <a href="{% url 'propietarios:activar' propietario.pk %}" class="btn btn-sm btn-outline-success" title="Activar">
-                                    <i class="fa-solid fa-check"></i>
-                                </a>
+                                <form method="post" action="{% url 'propietarios:activar' propietario.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Activar">
+                                        <i class="fa-solid fa-check"></i>
+                                    </button>
+                                </form>
                                 {% else %}
-                                <a href="{% url 'propietarios:desactivar' propietario.pk %}" class="btn btn-sm btn-outline-warning" title="Desactivar">
-                                    <i class="fa-solid fa-ban"></i>
-                                </a>
+                                <form method="post" action="{% url 'propietarios:desactivar' propietario.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </button>
+                                </form>
                                 {% endif %}
                                 <a href="{% url 'propietarios:eliminar' propietario.pk %}" class="btn btn-sm btn-outline-danger" title="Eliminar">
                                     <i class="fa-solid fa-trash"></i>

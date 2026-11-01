@@ -1,6 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
+
 from .models import Propietario
+
 
 class PropietarioForm(forms.ModelForm):
     class Meta:
@@ -12,6 +14,12 @@ class PropietarioForm(forms.ModelForm):
             'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0999999999'}),
             'correo': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@unemi.edu.ec'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
+        }
+        # Django ya valida que no se repitan (unique=True en el modelo).
+        # Aquí solo personalizamos el mensaje; ya no hace falta repetir la consulta a mano.
+        error_messages = {
+            'numero_identidad': {'unique': 'Ya existe un propietario con esta identidad.'},
+            'correo': {'unique': 'Ya existe un propietario con este correo.'},
         }
 
     def clean_numero_identidad(self):
@@ -28,24 +36,5 @@ class PropietarioForm(forms.ModelForm):
             raise ValidationError('Ingrese un número de celular válido de al menos 7 dígitos.')
         return celular
 
-    def clean(self):
-        cleaned_data = super().clean()
-        numero_identidad = cleaned_data.get('numero_identidad')
-        correo = cleaned_data.get('correo')
-
-        if numero_identidad:
-            propietario_qs = Propietario.objects.filter(numero_identidad=numero_identidad)
-            if self.instance.pk:
-                propietario_qs = propietario_qs.exclude(pk=self.instance.pk)
-            if propietario_qs.exists():
-                self.add_error('numero_identidad', 'Ya existe un propietario con esta identidad.')
-
-        if correo:
-            correo_qs = Propietario.objects.filter(correo=correo)
-            if self.instance.pk:
-                correo_qs = correo_qs.exclude(pk=self.instance.pk)
-            if correo_qs.exists():
-                self.add_error('correo', 'Ya existe un propietario con este correo.')
-
-        return cleaned_data
-        
+    def clean_correo(self):
+        return self.cleaned_data.get('correo', '').strip().lower()
