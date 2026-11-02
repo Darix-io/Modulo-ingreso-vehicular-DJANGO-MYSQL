@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Configuración QR{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft lg:flex-row lg:items-start lg:justify-between lg:p-8">
+        <div>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-secondary-container/20 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                <span class="material-symbols-outlined text-sm">shield_person</span>Solo administrador
+            </span>
+            <h1 class="mt-3 font-headline text-3xl font-bold tracking-tight text-brand-neutral">Configuración de los QR</h1>
+            <p class="mt-1 max-w-2xl text-slate-500">Cuánto dura cada credencial, si se valida en la garita y si se renueva sola al vencer.</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
+            <span class="material-symbols-outlined text-2xl text-brand-tertiary">update</span>
+            <div class="leading-tight">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Última actualización</p>
+                <p class="font-mono text-sm font-semibold text-brand-neutral">{{ object.ultima_actualizacion|date:"d/m/Y H:i" }}</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+        {# ---------------------------------------------------------- Formulario #}
+        <form method="post" id="form-configuracion" class="space-y-6 lg:col-span-2" novalidate
+              data-validacion-inicial="{% if object.activar_qr %}1{% else %}0{% endif %}">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <p class="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800" role="alert">{{ form.non_field_errors|join:" " }}</p>
+            {% endif %}
+
+            {# --- Vigencia #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white"><span class="material-symbols-outlined">hourglass_top</span></span>
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-brand-neutral">Vigencia del QR</h2>
+                        <p class="text-sm text-slate-500">Días de validez desde que el código se crea o se renueva.</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex flex-col gap-4 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <label for="{{ form.expiration_days.id_for_label }}" class="text-sm font-semibold text-brand-neutral">{{ form.expiration_days.label }}
+                        <span class="block text-xs font-normal text-slate-500">Entre {{ form.expiration_days.field.widget.attrs.min }} y {{ form.expiration_days.field.widget.attrs.max }} días.</span>
+                    </label>
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <button type="button" data-paso="-1" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100" aria-label="Restar un día"><span class="material-symbols-outlined">remove</span></button>
+                        <div class="flex items-baseline gap-1 rounded-lg border bg-white px-3 py-1.5 {% if form.expiration_days.errors %}border-red-500{% else %}border-slate-200{% endif %}">
+                            {{ form.expiration_days }}
+                            <span class="text-xs font-semibold uppercase text-slate-500">días</span>
+                        </div>
+                        <button type="button" data-paso="1" class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100" aria-label="Sumar un día"><span class="material-symbols-outlined">add</span></button>
+                    </div>
+                </div>
+                {% for error in form.expiration_days.errors %}
+                <p class="mt-2 flex items-start gap-1.5 text-sm font-medium text-red-700" role="alert"><span class="material-symbols-outlined text-base leading-5">error</span>{{ error }}</p>
+                {% endfor %}
+
+                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Atajos</span>
+                    <button type="button" data-dias="30" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-600 hover:bg-slate-50">30 días</button>
+                    <button type="button" data-dias="60" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-600 hover:bg-slate-50">60 días</button>
+                    <button type="button" data-dias="90" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-600 hover:bg-slate-50">90 días</button>
+                    <button type="button" data-dias="180" class="rounded-full border border-slate-200 px-3 py-1 font-medium text-slate-600 hover:bg-slate-50">180 días</button>
+                </div>
+                <p class="mt-4 flex items-start gap-2 text-sm text-slate-500"><span class="material-symbols-outlined text-lg text-slate-400">info</span>Se aplica a los QR que se creen o renueven desde ahora. Los QR existentes conservan su fecha de expiración.</p>
+            </section>
+
+            {# --- Validación #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white"><span class="material-symbols-outlined">qr_code_scanner</span></span>
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-brand-neutral">Validación en la garita</h2>
+                        <p class="text-sm text-slate-500">Regla general para aceptar o rechazar ingresos.</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+                    <div>
+                        <label for="{{ form.activar_qr.id_for_label }}" class="text-sm font-semibold text-brand-neutral">{{ form.activar_qr.label }}</label>
+                        <p class="mt-1 text-sm text-slate-500">Cuando está activada, la garita acepta los códigos QR y la validación por placa según las reglas de siempre.</p>
+                    </div>
+                    <label class="relative inline-flex shrink-0 cursor-pointer items-center">
+                        {{ form.activar_qr }}
+                        <span class="h-7 w-12 rounded-full bg-slate-300 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-primary peer-focus-visible:ring-offset-2"></span>
+                        <span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        <span class="sr-only">Activar o desactivar la validación de QR</span>
+                    </label>
+                </div>
+                <p id="aviso-validacion-apagada" class="mt-3 hidden items-start gap-2 rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800" role="alert">
+                    <span class="material-symbols-outlined text-lg">warning</span>
+                    <span>Con la validación desactivada <strong>ningún vehículo podrá ingresar</strong>, ni con el QR ni por placa: todos los intentos se denegarán como «Validación de QR deshabilitada».</span>
+                </p>
+            </section>
+
+            {# --- Renovación automática #}
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft">
+                <div class="flex items-start gap-3">
+                    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white"><span class="material-symbols-outlined">autorenew</span></span>
+                    <div>
+                        <h2 class="font-headline text-xl font-bold text-brand-neutral">Renovación automática</h2>
+                        <p class="text-sm text-slate-500">Qué pasa con los QR que vencen.</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+                    <div>
+                        <label for="{{ form.renovacion_automatica.id_for_label }}" class="text-sm font-semibold text-brand-neutral">Renovar los QR vencidos</label>
+                        <p class="mt-1 text-sm text-slate-500">En el mantenimiento diario se renuevan solos los QR vencidos de vehículos <strong>autorizados</strong> con propietario activo. Los suspendidos, no autorizados o de propietarios inactivos no se renuevan.</p>
+                    </div>
+                    <label class="relative inline-flex shrink-0 cursor-pointer items-center">
+                        {{ form.renovacion_automatica }}
+                        <span class="h-7 w-12 rounded-full bg-slate-300 transition peer-checked:bg-emerald-500 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-primary peer-focus-visible:ring-offset-2"></span>
+                        <span class="absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5"></span>
+                        <span class="sr-only">Activar o desactivar la renovación automática</span>
+                    </label>
+                </div>
+                <ul class="mt-3 space-y-1.5 text-sm text-slate-500">
+                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-lg text-slate-400">schedule</span><span>Se ejecuta con el comando <code class="break-all rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-700">python manage.py run_qr_maintenance</code>, que debe estar programado en el servidor (por ejemplo, cada noche).</span></li>
+                    <li class="flex items-start gap-2"><span class="material-symbols-outlined text-lg text-amber-500">print_disabled</span><span>Al renovar se genera un código nuevo: la credencial impresa anterior deja de funcionar.</span></li>
+                </ul>
+            </section>
+
+            <div class="sticky bottom-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                <p class="flex items-center gap-2 text-sm text-slate-500"><span class="material-symbols-outlined text-lg text-slate-400">save</span>Los cambios se aplican apenas los guardas.</p>
+                <div class="flex gap-2">
+                    <a href="{% url 'qr:configuracion_qr' %}" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 no-underline hover:bg-slate-50 sm:flex-none">Descartar cambios</a>
+                    <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary sm:flex-none">
+                        <span class="material-symbols-outlined text-xl text-secondary-container">check_circle</span>Guardar configuración
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        {# ---------------------------------------------------------- Estado actual #}
+        <aside class="space-y-6">
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-soft" aria-label="Estado actual de los QR">
+                <h2 class="font-headline text-xl font-bold text-brand-neutral">Estado actual de los QR</h2>
+                <p class="text-sm text-slate-500">De {{ contadores.total }} código{{ contadores.total|pluralize }} en total.</p>
+                <ul class="mt-4 space-y-3">
+                    <li>
+                        <a href="{% url 'qr:lista' %}?estado=vigentes" class="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 px-4 py-3 no-underline hover:bg-emerald-100">
+                            <span class="flex items-center gap-2 text-sm font-semibold text-emerald-800"><span class="material-symbols-outlined text-xl">verified</span>QR activos</span>
+                            <span class="font-mono text-2xl font-bold text-emerald-800">{{ contadores.vigentes }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'qr:lista' %}?estado=por_vencer" class="flex items-center justify-between gap-3 rounded-xl bg-amber-50 px-4 py-3 no-underline hover:bg-amber-100">
+                            <span class="flex items-center gap-2 text-sm font-semibold text-amber-800"><span class="material-symbols-outlined text-xl">warning</span>Por expirar (≤ {{ dias_por_vencer }} días)</span>
+                            <span class="font-mono text-2xl font-bold text-amber-800">{{ contadores.por_vencer }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'qr:lista' %}?estado=no_vigentes" class="flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-3 no-underline hover:bg-red-100">
+                            <span class="flex items-center gap-2 text-sm font-semibold text-red-800"><span class="material-symbols-outlined text-xl">block</span>Expirados o inactivos</span>
+                            <span class="font-mono text-2xl font-bold text-red-800">{{ contadores.no_vigentes }}</span>
+                        </a>
+                    </li>
+                </ul>
+                <p class="mt-3 text-xs text-slate-500">Los «por expirar» también cuentan como activos: todavía permiten ingresar.</p>
+            </section>
+
+            <section class="rounded-2xl border border-amber-200 bg-amber-50/60 p-6" aria-label="Advertencia de impacto">
+                <h2 class="flex items-center gap-2 font-headline text-lg font-bold text-amber-900"><span class="material-symbols-outlined">warning</span>Antes de cambiar algo</h2>
+                <ul class="mt-3 space-y-2 text-sm text-amber-900">
+                    <li>• Cambiar los días de vigencia no modifica los QR que ya existen.</li>
+                    <li>• Desactivar la validación bloquea todos los ingresos hasta que se vuelva a activar.</li>
+                    <li>• Renovar un QR invalida la credencial impresa anterior.</li>
+                </ul>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const formulario = document.getElementById('form-configuracion');
+    const dias = document.getElementById('{{ form.expiration_days.id_for_label }}');
+    const validacion = document.getElementById('{{ form.activar_qr.id_for_label }}');
+    const aviso = document.getElementById('aviso-validacion-apagada');
+    const minimo = parseInt(dias.min, 10), maximo = parseInt(dias.max, 10);
+
+    function limitar(valor) {
+        if (isNaN(valor)) { return minimo; }
+        return Math.min(maximo, Math.max(minimo, valor));
+    }
+    formulario.querySelectorAll('[data-paso]').forEach(function (boton) {
+        boton.addEventListener('click', function () {
+            dias.value = limitar((parseInt(dias.value, 10) || minimo) + parseInt(boton.dataset.paso, 10));
+        });
+    });
+    formulario.querySelectorAll('[data-dias]').forEach(function (boton) {
+        boton.addEventListener('click', function () { dias.value = limitar(parseInt(boton.dataset.dias, 10)); });
+    });
+
+    function actualizarAviso() {
+        aviso.classList.toggle('hidden', validacion.checked);
+        aviso.classList.toggle('flex', !validacion.checked);
+    }
+    validacion.addEventListener('change', actualizarAviso);
+    actualizarAviso();
+
+    // Apagar la validación detiene todos los ingresos: se pide confirmación
+    formulario.addEventListener('submit', function (evento) {
+        if (formulario.dataset.validacionInicial === '1' && !validacion.checked) {
+            if (!window.confirm('Vas a DESACTIVAR la validación de QR. Ningún vehículo podrá ingresar hasta que la actives de nuevo. ¿Guardar de todos modos?')) {
+                evento.preventDefault();
+            }
+        }
+    });
+})();
+</script>
+{% endblock %}

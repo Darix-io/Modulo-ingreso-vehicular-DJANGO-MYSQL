@@ -1,0 +1,53 @@
+{% comment %}
+Tabla de ingresos autorizados (HistorialIngreso) con encabezados ordenables.
+Variables: historial (la página), orden, orden_fecha, orden_vehiculo, orden_validador (de HistorialFiltroMixin) y hay_filtros.
+Solo muestra ingresos autorizados, por eso no tiene columna de estado.
+{% endcomment %}
+{% load query_transform %}
+<div class="overflow-x-auto">
+    <table class="w-full min-w-[820px] text-left text-sm">
+        <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <tr>
+                <th class="px-5 py-3 lg:px-6" aria-sort="{% if orden == 'fecha_ingreso' %}ascending{% elif orden == '-fecha_ingreso' %}descending{% else %}none{% endif %}">
+                    <a href="?{% query_transform orden=orden_fecha page=1 %}" class="inline-flex items-center gap-1 no-underline hover:text-brand-primary {% if orden == 'fecha_ingreso' or orden == '-fecha_ingreso' %}text-brand-primary{% else %}text-slate-500{% endif %}">Fecha y hora<span class="material-symbols-outlined text-base">{% if orden == 'fecha_ingreso' %}arrow_upward{% elif orden == '-fecha_ingreso' %}arrow_downward{% else %}unfold_more{% endif %}</span></a>
+                </th>
+                <th class="px-3 py-3" aria-sort="{% if orden == 'vehiculo__placa' %}ascending{% elif orden == '-vehiculo__placa' %}descending{% else %}none{% endif %}">
+                    <a href="?{% query_transform orden=orden_vehiculo page=1 %}" class="inline-flex items-center gap-1 no-underline hover:text-brand-primary {% if orden == 'vehiculo__placa' or orden == '-vehiculo__placa' %}text-brand-primary{% else %}text-slate-500{% endif %}">Placa<span class="material-symbols-outlined text-base">{% if orden == 'vehiculo__placa' %}arrow_upward{% elif orden == '-vehiculo__placa' %}arrow_downward{% else %}unfold_more{% endif %}</span></a>
+                </th>
+                <th class="px-3 py-3">Vehículo</th>
+                <th class="px-3 py-3">Propietario</th>
+                <th class="px-5 py-3 lg:px-6" aria-sort="{% if orden == 'usuario_validador__username' %}ascending{% elif orden == '-usuario_validador__username' %}descending{% else %}none{% endif %}">
+                    <a href="?{% query_transform orden=orden_validador page=1 %}" class="inline-flex items-center gap-1 no-underline hover:text-brand-primary {% if orden == 'usuario_validador__username' or orden == '-usuario_validador__username' %}text-brand-primary{% else %}text-slate-500{% endif %}">Guardia<span class="material-symbols-outlined text-base">{% if orden == 'usuario_validador__username' %}arrow_upward{% elif orden == '-usuario_validador__username' %}arrow_downward{% else %}unfold_more{% endif %}</span></a>
+                </th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            {% for entrada in historial %}
+            <tr class="hover:bg-slate-50/60">
+                <td class="whitespace-nowrap px-5 py-3 lg:px-6">
+                    <p class="font-semibold text-brand-neutral">{{ entrada.fecha_ingreso|date:"d/m/Y" }}</p>
+                    <p class="font-mono text-xs text-slate-500">{{ entrada.fecha_ingreso|date:"H:i:s" }}</p>
+                </td>
+                <td class="whitespace-nowrap px-3 py-3">{% include 'includes/placa.html' with placa=entrada.vehiculo.placa %}</td>
+                <td class="px-3 py-3">
+                    <p class="font-medium text-brand-neutral">{{ entrada.vehiculo.marca }} {{ entrada.vehiculo.modelo }}</p>
+                    <p class="text-xs text-slate-500">{{ entrada.vehiculo.color }}</p>
+                </td>
+                <td class="px-3 py-3">
+                    <p class="font-medium text-brand-neutral">{{ entrada.vehiculo.propietario.nombre }}</p>
+                    <p class="text-xs text-slate-500">{{ entrada.vehiculo.propietario.tipo }}</p>
+                </td>
+                <td class="whitespace-nowrap px-5 py-3 text-slate-700 lg:px-6">{{ entrada.usuario_validador.get_full_name|default:entrada.usuario_validador.username|default:"Sin guardia" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="px-6 py-14 text-center">
+                    <span class="material-symbols-outlined text-4xl text-slate-300">history</span>
+                    <p class="mt-2 font-semibold text-slate-600">{% if hay_filtros %}No hay ingresos con esos filtros{% else %}Todavía no hay ingresos registrados{% endif %}</p>
+                    <p class="mt-1 text-sm text-slate-500">{% if hay_filtros %}Prueba con otro rango de fechas o quita algún filtro.{% else %}Aparecerán aquí cuando se autorice el primer ingreso.{% endif %}</p>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel de control{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    {# ---------- Bienvenida y accesos rápidos ---------- #}
+    <section class="flex flex-col gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft lg:flex-row lg:items-center lg:justify-between lg:p-8">
+        <div class="min-w-0">
+            <span class="inline-flex items-center rounded-full bg-brand-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-brand-primary">Panel de control</span>
+            <h1 class="mt-3 font-headline text-3xl font-bold tracking-tight text-brand-neutral sm:text-4xl">{{ saludo }}, {{ user.first_name|default:user.username }}</h1>
+            <p class="mt-2 max-w-2xl text-slate-500">Resumen del control de acceso vehicular de hoy en la Universidad Estatal de Milagro.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <a href="{% url 'qr:reporte_historial_pdf' %}?fecha_inicio={{ fecha_hoy }}&fecha_final={{ fecha_hoy }}"
+               class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
+                <span class="material-symbols-outlined text-xl">download</span>
+                Descargar reporte del día
+            </a>
+            <a href="{% url 'qr:validar' %}"
+               class="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-container px-4 py-2.5 text-sm font-semibold text-brand-neutral no-underline shadow-sm hover:brightness-95">
+                <span class="material-symbols-outlined text-xl">qr_code_scanner</span>
+                Acceso rápido a escáner
+            </a>
+        </div>
+    </section>
+
+    {# ---------- Métricas principales ---------- #}
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total propietarios</p>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-brand-primary"><span class="material-symbols-outlined text-xl">groups</span></span>
+            </div>
+            <p class="mt-2 font-mono text-3xl font-bold text-brand-neutral">{{ total_propietarios }}</p>
+            <p class="mt-3 text-sm text-slate-500">Registrados en el módulo</p>
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total vehículos</p>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-brand-primary"><span class="material-symbols-outlined text-xl">directions_car</span></span>
+            </div>
+            <p class="mt-2 font-mono text-3xl font-bold text-brand-neutral">{{ total_vehiculos }}</p>
+            <p class="mt-3 text-sm text-slate-500">Registrados en el módulo</p>
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">QR activos</p>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700"><span class="material-symbols-outlined text-xl">qr_code_2</span></span>
+            </div>
+            <p class="mt-2 font-mono text-3xl font-bold text-brand-neutral">{{ qr_activos }}</p>
+            <p class="mt-3 flex items-center justify-between gap-2 text-sm">
+                {% if qr_proximos_vencer %}
+                <span class="font-medium text-amber-700">{{ qr_proximos_vencer }} por vencer (3 días o menos)</span>
+                <a href="{% url 'qr:lista' %}" class="shrink-0 font-semibold text-brand-tertiary no-underline hover:underline">Ver</a>
+                {% else %}
+                <span class="text-slate-500">Ninguno por vencer en 3 días</span>
+                {% endif %}
+            </p>
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Ingresos de hoy</p>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary text-white"><span class="material-symbols-outlined text-xl">login</span></span>
+            </div>
+            <p class="mt-2 font-mono text-3xl font-bold text-brand-neutral">{{ ingresos_hoy }}</p>
+            <p class="mt-3 flex items-center gap-1 text-sm font-medium {% if diferencia_ingresos > 0 %}text-emerald-700{% elif diferencia_ingresos < 0 %}text-red-700{% else %}text-slate-500{% endif %}">
+                {% if diferencia_ingresos > 0 %}<span class="material-symbols-outlined text-lg">arrow_upward</span>+{{ diferencia_ingresos }} vs. ayer
+                {% elif diferencia_ingresos < 0 %}<span class="material-symbols-outlined text-lg">arrow_downward</span>{{ diferencia_ingresos }} vs. ayer
+                {% else %}Igual que ayer ({{ ingresos_ayer }}){% endif %}
+            </p>
+        </article>
+    </section>
+
+    {# ---------- Autorizados, denegados y total ---------- #}
+    <section class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-center justify-between gap-2">
+                <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>Autorizados hoy</p>
+                {% if porcentaje_exito is not None %}<span class="rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-brand-primary">{{ porcentaje_exito|floatformat:1 }} % éxito</span>{% endif %}
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="font-mono text-4xl font-bold text-brand-neutral">{{ autorizados_hoy }}</p>
+                <p class="pb-1 text-sm text-slate-500">de {{ intentos_hoy }} intentos</p>
+            </div>
+            <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand-primary" style="width: {{ porcentaje_exito_ancho }}%"></div></div>
+            <p class="mt-3 text-sm text-slate-500">Movimientos validados correctamente</p>
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <div class="flex items-center justify-between gap-2">
+                <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-red-700"><span class="h-2 w-2 rounded-full bg-red-600"></span>Denegados hoy</p>
+                {% if porcentaje_rechazo is not None %}<span class="rounded-full bg-red-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-red-700">{{ porcentaje_rechazo|floatformat:1 }} % rechazo</span>{% endif %}
+            </div>
+            <div class="mt-3 flex items-end justify-between gap-3">
+                <p class="font-mono text-4xl font-bold text-red-700">{{ denegados_hoy }}</p>
+                <p class="pb-1 text-sm text-slate-500">intentos rechazados</p>
+            </div>
+            {% if causa_frecuente %}
+            <p class="mt-4 flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+                <span class="material-symbols-outlined text-lg">warning</span>
+                <span>Causa frecuente: <strong>{{ causa_frecuente.0 }}</strong> ({{ causa_frecuente.1 }} caso{{ causa_frecuente.1|pluralize }})</span>
+            </p>
+            {% else %}
+            <p class="mt-4 text-sm text-slate-500">Sin denegaciones registradas hoy</p>
+            {% endif %}
+        </article>
+
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft">
+            <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500"><span class="h-2 w-2 rounded-full bg-secondary-container"></span>Total de accesos</p>
+            <p class="mt-3 font-mono text-4xl font-bold text-brand-neutral">{{ total_accesos }}</p>
+            <p class="mt-1 text-sm text-slate-500">Ingresos autorizados acumulados</p>
+            <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div class="rounded-lg bg-slate-50 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Semana vs. pasada <span class="normal-case tracking-normal">(mismos días)</span></p>
+                    {% if variacion_semana_pct is None %}<p class="mt-1 text-slate-500">Sin datos previos</p>
+                    {% else %}<p class="mt-1 font-mono font-semibold {% if variacion_semana_pct >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">{% if variacion_semana_pct >= 0 %}+{% endif %}{{ variacion_semana_pct|floatformat:1 }} %</p>{% endif %}
+                </div>
+                <div class="rounded-lg bg-slate-50 px-3 py-2">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mes vs. pasado <span class="normal-case tracking-normal">(mismos días)</span></p>
+                    {% if variacion_mes_pct is None %}<p class="mt-1 text-slate-500">Sin datos previos</p>
+                    {% else %}<p class="mt-1 font-mono font-semibold {% if variacion_mes_pct >= 0 %}text-emerald-700{% else %}text-red-700{% endif %}">{% if variacion_mes_pct >= 0 %}+{% endif %}{{ variacion_mes_pct|floatformat:1 }} %</p>{% endif %}
+                </div>
+            </div>
+        </article>
+    </section>
+
+    {# ---------- Gráfico por bloques horarios ---------- #}
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft lg:p-6">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h2 class="flex items-center gap-2 font-headline text-xl font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">bar_chart</span>Accesos de hoy por bloques horarios</h2>
+                <p class="mt-1 text-sm text-slate-500">Autorizados y denegados en bloques de 2 horas (de 06:00 a 18:00).</p>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-slate-600">
+                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-brand-primary"></span>Autorizados</span>
+                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-red-600"></span>Denegados</span>
+            </div>
+        </div>
+        {% if not intentos_hoy %}
+        <p class="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-500">Aún no hay accesos registrados hoy; el gráfico se llenará durante el día.</p>
+        {% endif %}
+        <div class="relative mt-4 h-72"><canvas id="graficoAccesos" aria-label="Accesos de hoy por bloques de dos horas" role="img"></canvas></div>
+    </section>
+
+    {# ---------- Últimos movimientos y configuración ---------- #}
+    <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <article class="rounded-2xl border border-slate-200 bg-white shadow-soft xl:col-span-2">
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-5 lg:px-6">
+                <h2 class="flex items-center gap-2 font-headline text-xl font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">swap_horiz</span>Últimos movimientos del día</h2>
+                <a href="{% url 'qr:movimientos' %}" class="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-tertiary no-underline hover:underline">Ver registro completo<span class="material-symbols-outlined text-lg">arrow_forward</span></a>
+            </div>
+            {# Móvil: una tarjeta compacta por movimiento (como «Últimos accesos de hoy» en Validar acceso) #}
+            <ul class="mt-4 space-y-2 px-5 pb-5 md:hidden" aria-label="Últimos movimientos del día">
+                {% for movimiento in recent_movements %}
+                <li class="rounded-xl px-3 py-2.5 {% if movimiento.estado == 'DENEGADO' %}bg-red-50{% else %}bg-slate-50{% endif %}">
+                    <div class="flex items-center justify-between gap-3">
+                        {% include 'includes/placa.html' with placa=movimiento.vehiculo.placa %}
+                        <span class="shrink-0 font-mono text-xs text-slate-600">{{ movimiento.fecha|time:'H:i' }}</span>
+                    </div>
+                    <p class="mt-1.5 truncate text-sm font-medium text-brand-neutral">{{ movimiento.vehiculo.propietario.nombre }}</p>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1 rounded bg-slate-200/70 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase text-slate-700">
+                            <span class="material-symbols-outlined text-sm">{% if movimiento.tipo == 'INGRESO' %}login{% else %}logout{% endif %}</span>{{ movimiento.get_tipo_display }}
+                        </span>
+                        {% if movimiento.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Denegado' tono='rojo' %}{% endif %}
+                    </div>
+                    {% if movimiento.estado == 'DENEGADO' and movimiento.detalle %}<p class="mt-1 text-xs text-red-700">{{ movimiento.detalle }}</p>{% endif %}
+                </li>
+                {% empty %}
+                <li class="py-6 text-center text-sm text-slate-500">No hay movimientos registrados hoy.</li>
+                {% endfor %}
+            </ul>
+
+            {# Tablet y escritorio: la tabla #}
+            <div class="mt-4 hidden overflow-x-auto md:block">
+                <table class="w-full min-w-[640px] text-left text-sm">
+                    <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        <tr>
+                            <th class="px-5 py-3 lg:px-6">Placa</th>
+                            <th class="px-3 py-3">Vehículo</th>
+                            <th class="px-3 py-3">Propietario</th>
+                            <th class="px-3 py-3">Tipo</th>
+                            <th class="px-3 py-3">Estado</th>
+                            <th class="px-5 py-3 text-right lg:px-6">Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for movimiento in recent_movements %}
+                        <tr class="{% if movimiento.estado == 'DENEGADO' %}bg-red-50/50{% endif %}">
+                            <td class="px-5 py-3 lg:px-6">{% include 'includes/placa.html' with placa=movimiento.vehiculo.placa %}</td>
+                            <td class="px-3 py-3 text-slate-700">{{ movimiento.vehiculo.marca }} {{ movimiento.vehiculo.modelo }}</td>
+                            <td class="px-3 py-3 text-slate-700">{{ movimiento.vehiculo.propietario.nombre }}</td>
+                            <td class="px-3 py-3">
+                                <span class="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase text-slate-700">
+                                    <span class="material-symbols-outlined text-sm">{% if movimiento.tipo == 'INGRESO' %}login{% else %}logout{% endif %}</span>{{ movimiento.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td class="px-3 py-3">
+                                {% if movimiento.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}
+                                {% else %}{% include 'includes/badge_estado.html' with texto='Denegado' tono='rojo' %}
+                                <p class="mt-1 text-xs text-red-700">{{ movimiento.detalle }}</p>{% endif %}
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-right font-mono text-slate-600 lg:px-6">{{ movimiento.fecha|time:'H:i' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="px-6 py-10 text-center text-slate-500">No hay movimientos registrados hoy.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-soft lg:p-6">
+            <h2 class="flex items-center gap-2 font-headline text-xl font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">tune</span>Configuración QR</h2>
+            <dl class="mt-4 space-y-3 text-sm">
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                    <dt class="text-slate-600">Validación de códigos QR</dt>
+                    <dd>{% if qr_activada %}{% include 'includes/badge_estado.html' with texto='Activa' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Desactivada' tono='rojo' %}{% endif %}</dd>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                    <dt class="text-slate-600">Vigencia de las credenciales</dt>
+                    <dd class="font-mono font-semibold text-brand-neutral">{{ qr_expiration_days }} días</dd>
+                </div>
+                <div class="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+                    <dt class="text-slate-600">Renovación automática</dt>
+                    <dd>{% if qr_renovacion_automatica %}{% include 'includes/badge_estado.html' with texto='Activada' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Desactivada' tono='gris' %}{% endif %}</dd>
+                </div>
+            </dl>
+            {% if user.is_administrador %}
+            <a href="{% url 'qr:configuracion_qr' %}" class="mt-4 flex items-center justify-center gap-2 rounded-lg bg-brand-primary/10 px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-brand-primary/15">
+                <span class="material-symbols-outlined text-lg">settings</span>Ajustar parámetros
+            </a>
+            {% endif %}
+        </article>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ access_chart_labels|json_script:"datos-etiquetas" }}
+{{ access_chart_autorizados|json_script:"datos-autorizados" }}
+{{ access_chart_denegados|json_script:"datos-denegados" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    const leer = (id) => JSON.parse(document.getElementById(id).textContent);
+    const lienzo = document.getElementById('graficoAccesos');
+    if (lienzo && window.Chart) {
+        Chart.defaults.font.family = 'Inter, sans-serif';
+        new Chart(lienzo, {
+            type: 'bar',
+            data: {
+                labels: leer('datos-etiquetas'),
+                datasets: [
+                    { label: 'Autorizados', data: leer('datos-autorizados'), backgroundColor: '#0A2540', borderRadius: 4, maxBarThickness: 38 },
+                    { label: 'Denegados', data: leer('datos-denegados'), backgroundColor: '#DC2626', borderRadius: 4, maxBarThickness: 38 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0, color: '#64748b' }, grid: { color: 'rgba(148,163,184,0.2)' } },
+                    x: { ticks: { color: '#64748b', font: { family: 'JetBrains Mono, monospace' } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

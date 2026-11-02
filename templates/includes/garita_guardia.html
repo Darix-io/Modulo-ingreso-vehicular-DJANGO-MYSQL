@@ -1,0 +1,17 @@
+{% comment %}
+Cabecera de las pantallas de la garita (Validar acceso y sus resultados).
+Solo en móvil: enlace "Volver al menú". Siempre: el nombre de quien está validando.
+Opciones: etiqueta="Validación exitosa" y tono="verde|rojo" para mostrar un aviso a la derecha.
+{% endcomment %}
+{% load ui %}
+<a href="{% url 'usuarios:dashboard' %}" class="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-primary no-underline hover:underline lg:hidden">
+    <span class="material-symbols-outlined text-xl">arrow_back</span>Volver al menú
+</a>
+<div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-soft">
+    <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-sm font-bold text-white">{{ user.get_full_name|default:user.username|iniciales }}</span>
+    <div class="min-w-0 flex-1 leading-tight">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Guardia en turno</p>
+        <p class="truncate text-sm font-semibold text-brand-neutral">{{ user.get_full_name|default:user.username }}</p>
+    </div>
+    {% if etiqueta %}{% include 'includes/badge_estado.html' with texto=etiqueta tono=tono %}{% endif %}
+</div>

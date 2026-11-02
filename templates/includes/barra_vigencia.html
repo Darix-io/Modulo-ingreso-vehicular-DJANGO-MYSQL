@@ -1,0 +1,17 @@
+{% comment %}
+Barra de vigencia de un código QR. Uso: include 'includes/barra_vigencia.html' con vigencia=qr.vigencia
+(el diccionario sale de services/codigos.py: vigencia_qr). Muestra cuánto de su vida ya pasó.
+{% endcomment %}
+<div class="min-w-[9rem]">
+    <p class="text-sm font-medium
+        {% if vigencia.clave == 'expirado' %}text-red-700{% elif vigencia.clave == 'por_vencer' %}text-amber-700{% elif vigencia.clave == 'inactivo' %}text-slate-500{% else %}text-emerald-700{% endif %}">
+        {% if vigencia.clave == 'expirado' %}{% if vigencia.dias_vencido == 0 %}Expiró hoy{% else %}Expiró hace {{ vigencia.dias_vencido }} día{{ vigencia.dias_vencido|pluralize }}{% endif %}
+        {% elif vigencia.clave == 'inactivo' %}Desactivado
+        {% else %}{{ vigencia.dias_restantes }} día{{ vigencia.dias_restantes|pluralize }} restante{{ vigencia.dias_restantes|pluralize }}{% endif %}
+    </p>
+    <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ vigencia.porcentaje }}" aria-label="Vigencia transcurrida">
+        <div class="h-full rounded-full
+            {% if vigencia.clave == 'expirado' %}bg-red-600{% elif vigencia.clave == 'por_vencer' %}bg-amber-500{% elif vigencia.clave == 'inactivo' %}bg-slate-400{% else %}bg-emerald-500{% endif %}"
+            style="width: {{ vigencia.porcentaje }}%"></div>
+    </div>
+</div>

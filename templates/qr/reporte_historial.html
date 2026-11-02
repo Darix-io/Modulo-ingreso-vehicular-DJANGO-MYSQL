@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Reportes{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft lg:flex-row lg:items-center lg:justify-between lg:p-8">
+        <div>
+            <h1 class="font-headline text-3xl font-bold tracking-tight text-brand-neutral">Reportes de ingresos</h1>
+            <p class="mt-1 text-slate-500">Consulta, filtra y descarga los ingresos autorizados. Las descargas respetan los filtros aplicados.</p>
+        </div>
+        <div class="flex shrink-0 gap-2">
+            <a href="{{ pdf_url }}" class="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm hover:bg-primary hover:text-white">
+                <span class="material-symbols-outlined text-xl text-secondary-container">picture_as_pdf</span>PDF
+            </a>
+            <a href="{{ excel_url }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
+                <span class="material-symbols-outlined text-xl">table_chart</span>Excel
+            </a>
+            <a href="{{ csv_url }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
+                <span class="material-symbols-outlined text-xl">data_object</span>CSV
+            </a>
+        </div>
+    </section>
+
+    {% url 'qr:reporte_historial' as accion_reporte %}
+    {% include 'includes/filtros_historial.html' with accion=accion_reporte %}
+
+    <section class="grid grid-cols-1 gap-6 xl:grid-cols-5">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft xl:col-span-3 lg:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="font-headline text-lg font-bold text-brand-neutral">Ingresos por día</h2>
+                    <p class="text-sm text-slate-500">Ingresos autorizados en el periodo filtrado.</p>
+                </div>
+                <span class="shrink-0 rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-slate-700">Total: <span id="total-dia">{{ total_registros }}</span></span>
+            </div>
+            <div class="relative mt-4 h-64">
+                <canvas id="grafico-dias" role="img" aria-label="Gráfico de ingresos por día"></canvas>
+                <p id="vacio-dias" class="absolute inset-0 hidden items-center justify-center text-sm text-slate-500">No hay ingresos para graficar con estos filtros.</p>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-soft xl:col-span-2 lg:p-6">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="font-headline text-lg font-bold text-brand-neutral">Ingresos por guardia</h2>
+                    <p class="text-sm text-slate-500">Quién registró los ingresos.</p>
+                </div>
+                <span id="cantidad-guardias" class="shrink-0 rounded-lg bg-slate-100 px-3 py-1.5 font-mono text-xs font-semibold text-slate-700"></span>
+            </div>
+            <div class="relative mt-4 h-52">
+                <canvas id="grafico-guardias" role="img" aria-label="Gráfico de ingresos por guardia"></canvas>
+                <p id="vacio-guardias" class="absolute inset-0 hidden items-center justify-center text-sm text-slate-500">No hay ingresos para graficar con estos filtros.</p>
+            </div>
+            <ul id="lista-guardias" class="mt-3 space-y-1 text-sm"></ul>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+        <div class="px-5 py-4 lg:px-6">
+            <h2 class="font-headline text-lg font-bold text-brand-neutral">Resultados</h2>
+            <p class="text-sm text-slate-500">Detalle de los ingresos según los filtros. <strong class="font-mono text-brand-neutral">{{ total_registros }}</strong> registro{{ total_registros|pluralize }}.</p>
+        </div>
+        {% include 'includes/tabla_historial.html' %}
+        {% include 'includes/paginacion.html' with nombre='ingresos' %}
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# Versión fija de Chart.js #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const urlDatos = "{{ chart_data_url|escapejs }}";
+    const AZUL = '#0A2540', AMBAR = '#F59E0B', GRIS = '#94A3B8';
+
+    function mostrarVacio(idLienzo, idMensaje) {
+        document.getElementById(idLienzo).classList.add('hidden');
+        const mensaje = document.getElementById(idMensaje);
+        mensaje.classList.remove('hidden');
+        mensaje.classList.add('flex');
+    }
+
+    fetch(urlDatos, { headers: { 'Accept': 'application/json' } })
+        .then(function (respuesta) { if (!respuesta.ok) { throw new Error('HTTP ' + respuesta.status); } return respuesta.json(); })
+        .then(function (datos) {
+            document.getElementById('total-dia').textContent = datos.total;
+
+            // ---- Ingresos por día
+            if (!datos.labels.length) {
+                mostrarVacio('grafico-dias', 'vacio-dias');
+            } else {
+                new Chart(document.getElementById('grafico-dias'), {
+                    type: 'line',
+                    data: {
+                        labels: datos.labels,
+                        datasets: [{
+                            label: 'Ingresos', data: datos.totals, borderColor: AZUL, backgroundColor: 'rgba(10, 37, 64, 0.10)',
+                            fill: true, tension: 0.25, borderWidth: 2.5, pointRadius: datos.labels.length > 45 ? 0 : 3.5,
+                            pointBackgroundColor: AMBAR, pointBorderColor: AZUL,
+                        }],
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { maxTicksLimit: 12, color: '#64748B' } },
+                            y: { beginAtZero: true, ticks: { precision: 0, color: '#64748B' }, grid: { color: '#E2E8F0' } },
+                        },
+                    },
+                });
+            }
+
+            // ---- Ingresos por guardia
+            document.getElementById('cantidad-guardias').textContent = datos.labels_validador.length + ' guardia' + (datos.labels_validador.length === 1 ? '' : 's');
+            if (!datos.labels_validador.length) {
+                mostrarVacio('grafico-guardias', 'vacio-guardias');
+            } else {
+                const paleta = [AZUL, AMBAR, GRIS, '#1E3A8A', '#0F766E', '#B45309'];
+                new Chart(document.getElementById('grafico-guardias'), {
+                    type: 'bar',
+                    data: {
+                        labels: datos.labels_validador,
+                        datasets: [{ label: 'Ingresos', data: datos.totals_validador, borderRadius: 6,
+                                     backgroundColor: datos.labels_validador.map(function (_, i) { return paleta[i % paleta.length]; }) }],
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { precision: 0, color: '#64748B' }, grid: { color: '#E2E8F0' } },
+                            y: { grid: { display: false }, ticks: { color: '#0F172A' } },
+                        },
+                    },
+                });
+                const lista = document.getElementById('lista-guardias');
+                datos.labels_validador.forEach(function (nombre, i) {
+                    const cantidad = datos.totals_validador[i];
+                    const porcentaje = datos.total ? (cantidad * 100 / datos.total).toFixed(1).replace('.', ',') : '0';
+                    const fila = document.createElement('li');
+                    fila.className = 'flex items-center justify-between gap-3';
+                    const etiqueta = document.createElement('span');
+                    etiqueta.className = 'flex min-w-0 items-center gap-2 text-slate-700';
+                    const punto = document.createElement('span');
+                    punto.className = 'h-2.5 w-2.5 shrink-0 rounded-full';
+                    punto.style.backgroundColor = paleta[i % paleta.length];
+                    const texto = document.createElement('span');
+                    texto.className = 'truncate';
+                    texto.textContent = nombre;
+                    etiqueta.append(punto, texto);
+                    const valor = document.createElement('span');
+                    valor.className = 'shrink-0 font-mono text-slate-600';
+                    valor.textContent = cantidad + ' (' + porcentaje + ' %)';
+                    fila.append(etiqueta, valor);
+                    lista.append(fila);
+                });
+            }
+        })
+        .catch(function () {
+            mostrarVacio('grafico-dias', 'vacio-dias');
+            mostrarVacio('grafico-guardias', 'vacio-guardias');
+            document.getElementById('vacio-dias').textContent = 'No se pudieron cargar los gráficos. Recarga la página.';
+            document.getElementById('vacio-guardias').textContent = 'No se pudieron cargar los gráficos.';
+        });
+})();
+</script>
+{% endblock %}

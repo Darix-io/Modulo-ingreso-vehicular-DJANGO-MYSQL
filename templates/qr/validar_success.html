@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Acceso autorizado{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-xl space-y-5">
+    {% include 'includes/garita_guardia.html' with etiqueta='Validación exitosa' tono='verde' %}
+
+    <section class="rounded-2xl bg-gradient-to-b from-emerald-500 to-emerald-700 px-6 py-8 text-center text-white shadow-soft" role="status">
+        <span class="inline-flex h-20 w-20 items-center justify-center rounded-full bg-white text-emerald-600 shadow-lg">
+            <span class="material-symbols-outlined text-5xl" style="font-variation-settings: 'wght' 600">check</span>
+        </span>
+        <h1 class="mt-4 font-headline text-2xl font-bold uppercase tracking-wide sm:text-3xl">{{ resultado.mensaje }}</h1>
+        <p class="mt-3 inline-flex items-center gap-2 rounded-full bg-black/20 px-4 py-1.5 text-sm font-bold uppercase tracking-wider">
+            <span class="material-symbols-outlined text-xl">{% if resultado.es_ingreso %}login{% else %}logout{% endif %}</span>{% if resultado.es_ingreso %}Ingreso · entrada{% else %}Salida{% endif %}
+        </p>
+        {% if resultado.manual %}<p class="mt-3 text-xs font-semibold uppercase tracking-wider text-emerald-100">Validación manual por placa</p>{% endif %}
+        <p class="mt-4 border-t border-white/25 pt-4 font-mono text-sm">
+            {{ resultado.fecha|date:"l, j \d\e F \d\e Y" }} · <span class="font-bold">{{ resultado.fecha|date:"H:i:s" }}</span>
+        </p>
+        <p class="mt-1 text-sm text-emerald-50">Registrado por: {{ user.get_full_name|default:user.username }}</p>
+    </section>
+
+    {% include 'includes/resultado_vehiculo.html' %}
+
+    <div class="space-y-3">
+        <a href="{% url 'qr:validar' %}" class="flex w-full items-center justify-center gap-3 rounded-xl bg-brand-primary px-6 py-4 text-base font-bold uppercase tracking-wide text-white no-underline shadow-soft hover:bg-primary hover:text-white">
+            <span class="material-symbols-outlined text-2xl">qr_code_scanner</span>Validar otro vehículo
+        </a>
+        <a href="{% url 'qr:detalle' resultado.codigo_qr.pk %}" class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50">
+            <span class="material-symbols-outlined text-xl">assignment</span>Ver el código QR del vehículo
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Recargar esta página volvería a validar (y registraría otro movimiento): se deja la dirección limpia.
+    history.replaceState(null, '', "{% url 'qr:validar' %}");
+</script>
+{% endblock %}

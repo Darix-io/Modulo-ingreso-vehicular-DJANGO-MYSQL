@@ -1,0 +1,35 @@
+/* GaritaQR - estilos propios.
+   El diseño (colores, fuentes, componentes) está en la configuración de Tailwind de base.html;
+   aquí solo quedan unas reglas que Tailwind no cubre. */
+
+* {
+    box-sizing: border-box;
+}
+
+/* El contenido nunca debe desbordar: los hijos de una cuadrícula pueden encogerse
+   (sin esto, un gráfico o una tabla ancha empuja la columna fuera de la pantalla). */
+main .grid > *,
+main .flex > * {
+    min-width: 0;
+}
+
+main canvas,
+main img {
+    max-width: 100%;
+}
+
+/* Campos del inicio de sesión: el borde y el fondo los pone el contenedor con el ícono */
+#id_username,
+#id_password {
+    width: 100%;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.95rem;
+    color: #0f172a;
+}
+
+#id_username::placeholder,
+#id_password::placeholder {
+    color: #94a3b8;
+}

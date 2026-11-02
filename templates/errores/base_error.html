@@ -1,0 +1,56 @@
+{% comment %}
+Base de las páginas de error (403, 404 y 500). Es independiente de base.html y no usa Bootstrap ni Tailwind:
+tiene su propio CSS para verse bien aunque falle el resto (la 500 se dibuja sin sesión ni contexto).
+Cada página define: titulo_pagina, codigo, icono (un <svg>), titulo y mensaje.
+{% endcomment %}
+{% load static %}<!DOCTYPE html>
+<html lang="es-ec">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo_pagina %}Error{% endblock %} · GaritaQR</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <style>
+        :root { --azul: #0A2540; --ambar: #F59E0B; --fondo: #F5F7FB; --texto: #0F172A; --suave: #64748B; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+               padding: 24px 16px; background: var(--fondo); color: var(--texto);
+               font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+        .marca { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; text-decoration: none; color: var(--azul); }
+        .marca img { width: 40px; height: 40px; }
+        .marca strong { font-size: 1.35rem; letter-spacing: -0.01em; }
+        .marca strong span { color: var(--ambar); }
+        .tarjeta { width: 100%; max-width: 30rem; text-align: center; background: #fff; border: 1px solid #E2E8F0;
+                   border-radius: 20px; padding: 36px 28px; box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06); }
+        .icono { display: inline-flex; width: 76px; height: 76px; align-items: center; justify-content: center;
+                 border-radius: 50%; background: #FEF3C7; color: #B45309; }
+        .icono svg { width: 38px; height: 38px; }
+        .codigo { margin: 18px 0 0; font-family: "JetBrains Mono", Consolas, monospace; font-size: 0.9rem; font-weight: 700;
+                  letter-spacing: 0.3em; color: var(--suave); }
+        h1 { margin: 6px 0 0; font-size: 1.6rem; line-height: 1.25; letter-spacing: -0.01em; color: var(--azul); }
+        p.mensaje { margin: 12px 0 0; line-height: 1.6; color: var(--suave); }
+        .boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 28px; padding: 13px 26px;
+                 border-radius: 10px; background: var(--azul); color: #fff; font-weight: 600; text-decoration: none; }
+        .boton:hover, .boton:focus-visible { background: #000F22; outline: none; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.55); }
+        .pie { margin-top: 20px; font-size: 0.8rem; color: var(--suave); }
+        @media (max-width: 420px) { .tarjeta { padding: 28px 20px; } h1 { font-size: 1.4rem; } .boton { width: 100%; } }
+    </style>
+</head>
+<body>
+    <a class="marca" href="{% url 'usuarios:dashboard' %}" aria-label="GaritaQR">
+        <img src="{% static 'img/favicon.svg' %}" alt="">
+        <strong>Garita<span>QR</span></strong>
+    </a>
+    <main class="tarjeta" role="main">
+        <span class="icono" aria-hidden="true">{% block icono %}{% endblock %}</span>
+        <p class="codigo">{% block codigo %}{% endblock %}</p>
+        <h1>{% block titulo %}{% endblock %}</h1>
+        <p class="mensaje">{% block mensaje %}{% endblock %}</p>
+        {% block boton %}
+        {% if user.is_authenticated %}<a class="boton" href="{% url 'usuarios:dashboard' %}">Volver al panel</a>
+        {% else %}<a class="boton" href="{% url 'usuarios:login' %}">Iniciar sesión</a>{% endif %}
+        {% endblock %}
+    </main>
+    <p class="pie">GaritaQR · UNEMI · Control de ingreso vehicular</p>
+</body>
+</html>

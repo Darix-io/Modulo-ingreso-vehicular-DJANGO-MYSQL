@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+
+{% block content_anonimo %}
+<div class="flex min-h-screen flex-col lg:flex-row">
+
+    {# Panel izquierdo: marca #}
+    <section class="relative flex min-h-[560px] w-full flex-col justify-between overflow-hidden bg-gradient-to-tr from-primary via-primary-container to-primary-container p-8 text-white sm:p-12 lg:min-h-screen lg:w-[55%] lg:p-16">
+        <div class="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-secondary-container/15 blur-3xl"></div>
+        <div class="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-white/10 blur-3xl"></div>
+
+        <div class="relative">
+            {% include 'includes/logo.html' with claro=True %}
+            <p class="mt-2 text-sm font-medium text-white/70">Universidad Estatal de Milagro</p>
+        </div>
+
+        <div class="relative my-10 max-w-2xl space-y-8 lg:my-auto">
+            <div class="space-y-4">
+                <h1 class="font-headline text-4xl font-bold leading-tight tracking-tight">Control de acceso vehicular institucional</h1>
+                <p class="max-w-xl text-lg text-white/80">Gestión segura del ingreso y salida de vehículos del campus mediante códigos QR.</p>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
+                        <span class="material-symbols-outlined text-xl">qr_code_2</span>
+                    </span>
+                    <div>
+                        <p class="font-headline font-bold">Validación QR instantánea</p>
+                        <p class="mt-1 text-sm leading-snug text-white/70">Lectura rápida del código y registro inmediato en la garita.</p>
+                    </div>
+                </div>
+                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
+                        <span class="material-symbols-outlined text-xl">history</span>
+                    </span>
+                    <div>
+                        <p class="font-headline font-bold">Historial completo de accesos</p>
+                        <p class="mt-1 text-sm leading-snug text-white/70">Trazabilidad de los ingresos y movimientos registrados en la garita.</p>
+                    </div>
+                </div>
+                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
+                        <span class="material-symbols-outlined text-xl">file_download</span>
+                    </span>
+                    <div>
+                        <p class="font-headline font-bold">Reportes en PDF, Excel y CSV</p>
+                        <p class="mt-1 text-sm leading-snug text-white/70">Exporta el historial con filtros en un solo clic.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="relative text-sm text-white/60">© UNEMI · Módulo de ingreso vehicular</p>
+    </section>
+
+    {# Panel derecho: formulario #}
+    <section class="flex w-full flex-col items-center justify-center bg-surface px-6 py-12 sm:px-12 lg:w-[45%] lg:px-16">
+        <div class="mx-auto w-full max-w-md space-y-7">
+            <div class="space-y-2 text-left">
+                <h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Bienvenido</h2>
+                <p class="text-on-surface-variant">Ingresa tus credenciales para acceder al sistema</p>
+            </div>
+
+            <form method="post" class="space-y-5" novalidate>
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+                {% if form.non_field_errors %}
+                <div class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    <span class="material-symbols-outlined text-lg">error</span>
+                    <span>{{ form.non_field_errors.0 }}</span>
+                </div>
+                {% endif %}
+
+                <div class="space-y-1.5">
+                    <label for="{{ form.username.id_for_label }}" class="block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Correo institucional o usuario</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-on-surface-variant">alternate_email</span>
+                        {{ form.username }}
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label for="{{ form.password.id_for_label }}" class="block text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant">Contraseña</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-on-surface-variant">lock</span>
+                        {{ form.password }}
+                        <button type="button" id="verClave" class="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 text-on-surface-variant hover:text-on-surface" title="Mostrar u ocultar contraseña" aria-label="Mostrar u ocultar contraseña">
+                            <span class="material-symbols-outlined text-xl" id="verClaveIcono">visibility</span>
+                        </button>
+                    </div>
+                </div>
+
+                <label class="flex cursor-pointer select-none items-center gap-3">
+                    {{ form.recordarme }}
+                    <span class="text-sm font-medium text-on-surface">Recordarme</span>
+                </label>
+
+                <button type="submit" class="group flex w-full items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary active:scale-[0.99]">
+                    <span class="material-symbols-outlined text-xl text-secondary-container transition-transform group-hover:rotate-12">login</span>
+                    <span>Ingresar</span>
+                </button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const campoClave = document.getElementById('id_password');
+    const iconoClave = document.getElementById('verClaveIcono');
+    document.getElementById('verClave').addEventListener('click', () => {
+        const oculta = campoClave.type === 'password';
+        campoClave.type = oculta ? 'text' : 'password';
+        iconoClave.textContent = oculta ? 'visibility_off' : 'visibility';
+    });
+</script>
+{% endblock %}

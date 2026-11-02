@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load query_transform %}
+
+{% block title %}Códigos QR{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    {# El QR se crea solo al registrar un vehículo, por eso aquí no hay botón para generarlo #}
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between lg:p-8">
+        <div>
+            <h1 class="font-headline text-3xl font-bold tracking-tight text-brand-neutral">Códigos QR</h1>
+            <p class="mt-1 text-slate-500">Credenciales digitales de los vehículos: vigencia, renovación e impresión. Cada QR se genera solo al registrar el vehículo.</p>
+        </div>
+        <a href="{% url 'qr:historial' %}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
+            <span class="material-symbols-outlined text-xl">history</span>Ver historial
+        </a>
+    </section>
+
+    {# Contadores: también sirven de filtro #}
+    <section class="grid grid-cols-1 gap-4 md:grid-cols-3" aria-label="Códigos QR por estado">
+        <a href="?{% if estado_filter == 'vigentes' %}{% query_transform estado='' page=1 %}{% else %}{% query_transform estado='vigentes' page=1 %}{% endif %}"
+           class="block rounded-2xl border bg-white p-5 no-underline shadow-soft transition hover:shadow-md {% if estado_filter == 'vigentes' %}border-brand-primary ring-2 ring-brand-primary{% else %}border-slate-200{% endif %}">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">QR activos</p>
+                <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Vigentes</span>
+            </div>
+            <p class="mt-2 flex items-end justify-between font-mono text-4xl font-bold text-brand-neutral">{{ contadores.vigentes }}<span class="material-symbols-outlined text-3xl text-emerald-500">verified</span></p>
+            <p class="mt-2 text-sm text-slate-500">De {{ contadores.total }} código{{ contadores.total|pluralize }} en total</p>
+        </a>
+        <a href="?{% if estado_filter == 'por_vencer' %}{% query_transform estado='' page=1 %}{% else %}{% query_transform estado='por_vencer' page=1 %}{% endif %}"
+           class="block rounded-2xl border bg-white p-5 no-underline shadow-soft transition hover:shadow-md {% if estado_filter == 'por_vencer' %}border-brand-primary ring-2 ring-brand-primary{% else %}border-slate-200{% endif %}">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Próximos a vencer</p>
+                <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">≤ {{ dias_por_vencer }} días</span>
+            </div>
+            <p class="mt-2 flex items-end justify-between font-mono text-4xl font-bold text-brand-neutral">{{ contadores.por_vencer }}<span class="material-symbols-outlined text-3xl text-amber-500">warning</span></p>
+            <p class="mt-2 text-sm text-slate-500">Conviene renovarlos pronto</p>
+        </a>
+        <a href="?{% if estado_filter == 'no_vigentes' %}{% query_transform estado='' page=1 %}{% else %}{% query_transform estado='no_vigentes' page=1 %}{% endif %}"
+           class="block rounded-2xl border bg-white p-5 no-underline shadow-soft transition hover:shadow-md {% if estado_filter == 'no_vigentes' %}border-brand-primary ring-2 ring-brand-primary{% else %}border-slate-200{% endif %}">
+            <div class="flex items-start justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expirados o inactivos</p>
+                <span class="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">No válidos</span>
+            </div>
+            <p class="mt-2 flex items-end justify-between font-mono text-4xl font-bold text-brand-neutral">{{ contadores.no_vigentes }}<span class="material-symbols-outlined text-3xl text-red-500">block</span></p>
+            <p class="mt-2 text-sm text-slate-500">No permiten el ingreso hasta renovarse</p>
+        </a>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+        <form method="get" class="flex flex-col gap-3 px-5 py-5 sm:flex-row lg:px-6" role="search">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-slate-400">search</span>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Placa, propietario o cédula"
+                       class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-primary focus:outline-none">
+            </div>
+            <select name="estado" onchange="this.form.submit()" aria-label="Filtrar por estado"
+                    class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-sm focus:border-brand-primary focus:outline-none">
+                <option value="">Todos los estados</option>
+                <option value="vigentes" {% if estado_filter == 'vigentes' %}selected{% endif %}>Activos (vigentes)</option>
+                <option value="por_vencer" {% if estado_filter == 'por_vencer' %}selected{% endif %}>Por vencer</option>
+                <option value="no_vigentes" {% if estado_filter == 'no_vigentes' %}selected{% endif %}>Expirados o inactivos</option>
+            </select>
+            <button type="submit" class="rounded-lg bg-brand-primary/10 px-5 py-2.5 text-sm font-semibold text-brand-primary hover:bg-brand-primary/15">Buscar</button>
+        </form>
+
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[900px] text-left text-sm">
+                <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                    <tr>
+                        <th class="px-5 py-3 lg:px-6">QR</th>
+                        <th class="px-3 py-3">Placa</th>
+                        <th class="px-3 py-3">Propietario</th>
+                        <th class="px-3 py-3">Creación</th>
+                        <th class="px-3 py-3">Expiración</th>
+                        <th class="px-3 py-3">Vigencia</th>
+                        <th class="px-3 py-3">Estado</th>
+                        <th class="px-5 py-3 text-right lg:px-6">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for qr in qrs %}
+                    <tr class="hover:bg-slate-50/60 {% if qr.vigencia.clave == 'por_vencer' %}bg-amber-50/40{% elif not qr.vigencia.es_vigente %}bg-slate-50/60{% endif %}">
+                        <td class="px-5 py-3 lg:px-6">
+                            {% if qr.imagen %}<img src="{{ qr.imagen.url }}" alt="QR de {{ qr.vehiculo.placa }}" class="h-12 w-12 rounded-md border border-slate-200 bg-white p-0.5 {% if not qr.vigencia.es_vigente %}opacity-40 grayscale{% endif %}">
+                            {% else %}<span class="flex h-12 w-12 items-center justify-center rounded-md bg-slate-100 text-slate-400"><span class="material-symbols-outlined">qr_code_2</span></span>{% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3">{% include 'includes/placa.html' with placa=qr.vehiculo.placa %}</td>
+                        <td class="px-3 py-3">
+                            <div class="flex items-center gap-3">
+                                {% include 'includes/avatar.html' with nombre=qr.vehiculo.propietario.nombre %}
+                                <div class="min-w-0">
+                                    <p class="truncate font-semibold text-brand-neutral">{{ qr.vehiculo.propietario.nombre }}</p>
+                                    <p class="text-xs text-slate-500">{{ qr.vehiculo.propietario.tipo }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 font-mono text-xs text-slate-600">{{ qr.fecha_creacion|date:"d/m/Y" }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 font-mono text-xs {% if qr.vigencia.clave == 'expirado' %}font-semibold text-red-700{% else %}text-slate-600{% endif %}">{{ qr.fecha_expiracion|date:"d/m/Y" }}</td>
+                        <td class="px-3 py-3">{% include 'includes/barra_vigencia.html' with vigencia=qr.vigencia %}</td>
+                        <td class="px-3 py-3">{% include 'includes/badge_estado.html' with texto=qr.vigencia.texto tono=qr.vigencia.tono %}</td>
+                        <td class="px-5 py-3 lg:px-6">
+                            <div class="flex items-center justify-end gap-1">
+                                <a href="{% url 'qr:detalle' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Ver detalle" aria-label="Ver detalle del QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">visibility</span></a>
+                                <a href="{% url 'qr:credencial' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Imprimir credencial" aria-label="Imprimir la credencial de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">print</span></a>
+                                <a href="{% url 'qr:descargar' qr.pk %}" class="rounded-lg p-2 text-slate-600 no-underline hover:bg-slate-100 hover:text-brand-primary" title="Descargar imagen" aria-label="Descargar el QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">download</span></a>
+                                {% if user.is_administrador %}
+                                <form method="post" action="{% url 'qr:renovar' qr.pk %}">{% csrf_token %}
+                                    <button type="submit" class="rounded-lg p-2 text-amber-600 hover:bg-amber-50 hover:text-amber-700" title="Renovar (genera un token nuevo)" aria-label="Renovar el QR de {{ qr.vehiculo.placa }}"><span class="material-symbols-outlined text-xl">autorenew</span></button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-14 text-center">
+                            <span class="material-symbols-outlined text-4xl text-slate-300">qr_code_2</span>
+                            <p class="mt-2 font-semibold text-slate-700">No se encontraron códigos QR</p>
+                            <p class="text-sm text-slate-500">{% if search_query or estado_filter %}Prueba con otros filtros o <a href="{% url 'qr:lista' %}" class="font-semibold text-brand-tertiary">limpia la búsqueda</a>.{% else %}Los códigos aparecen al registrar vehículos.{% endif %}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'includes/paginacion.html' with nombre='códigos QR' %}
+    </section>
+</div>
+{% endblock %}

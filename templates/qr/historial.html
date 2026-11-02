@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de ingresos{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    <section class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between lg:p-8">
+        <div>
+            <h1 class="font-headline text-3xl font-bold tracking-tight text-brand-neutral">Historial de ingresos</h1>
+            <p class="mt-1 text-slate-500">Registro de los ingresos autorizados al campus. Los intentos denegados y las salidas se ven en Movimientos.</p>
+        </div>
+        <a href="{% url 'qr:reporte_historial' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white no-underline shadow-sm hover:bg-primary hover:text-white">
+            <span class="material-symbols-outlined text-xl text-secondary-container">bar_chart</span>Reportes y exportación
+        </a>
+    </section>
+
+    {% url 'qr:historial' as accion_historial %}
+    {% include 'includes/filtros_historial.html' with accion=accion_historial %}
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-soft">
+        <div class="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+            <p class="text-sm text-slate-600">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total de ingresos</span>
+                <strong class="ml-2 font-mono text-2xl text-brand-neutral">{{ total_registros }}</strong>
+                {% if hay_filtros %}<span class="ml-1 text-slate-500">con los filtros aplicados</span>{% endif %}
+            </p>
+        </div>
+        {% include 'includes/tabla_historial.html' %}
+        {% include 'includes/paginacion.html' with nombre='ingresos' %}
+    </section>
+</div>
+{% endblock %}
