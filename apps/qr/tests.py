@@ -488,3 +488,30 @@ class SeedDemoAvisoTests(TestCase):
         self.assertIn('AVISO', texto)
         self.assertIn('03:19', texto)
         self.assertIn('seed_demo --reset', texto)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class ArranqueDesdeCeroTests(TestCase):
+    """`seed_demo --reset` solo (una línea) deja el sistema listo aunque la base esté recién migrada."""
+
+    def test_reset_sobre_una_base_vacia_crea_usuarios_y_datos(self):
+        self.assertEqual(Propietario.objects.count(), 0)
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        self.assertEqual(set(get_user_model().objects.values_list('username', flat=True)),
+                         {'admin', 'seguridad', 'seguridad2'})
+        self.assertEqual((Propietario.objects.count(), Vehiculo.objects.count(), CodigoQR.objects.count()), (15, 20, 20))
+        self.assertTrue(ConfiguracionQR.objects.filter(pk=1).exists())
+
+    def test_reset_dos_veces_no_duplica_nada(self):
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        self.assertEqual((Propietario.objects.count(), Vehiculo.objects.count(), get_user_model().objects.count()), (15, 20, 3))
+
+    def test_los_usuarios_de_prueba_pueden_iniciar_sesion(self):
+        call_command('seed_demo', '--reset', stdout=StringIO())
+        call_command('seed_roles_users', stdout=StringIO())            # volver a ejecutarlo tampoco rompe nada
+        self.assertEqual(get_user_model().objects.count(), 3)
+        for usuario, clave in (('admin@unemi.edu.ec', 'Admin1234!'), ('seguridad@unemi.edu.ec', 'Seguridad123!')):
+            respuesta = self.client.post(reverse('usuarios:login'), {'username': usuario, 'password': clave})
+            self.assertRedirects(respuesta, reverse('usuarios:dashboard'), fetch_redirect_response=False)
+            self.client.logout()
