@@ -202,6 +202,15 @@ class PantallaValidarTests(BaseValidarTests):
         self.assertContains(respuesta, 'yaLeido')
         self.assertContains(respuesta, "'?token=' + encodeURIComponent(texto)")
 
+    def test_el_marco_del_escaner_es_un_cuadrado_dibujado_en_css(self):
+        """El marco mide 70 % del lado menor (cqmin) con alto = ancho, así no depende de cuándo mida la librería."""
+        self.client.force_login(self.guardia)
+        respuesta = self.client.get(reverse('qr:validar'))
+        self.assertContains(respuesta, 'width: 70cqmin; height: 70cqmin')
+        self.assertContains(respuesta, '#qr-shaded-region { display: none !important; }')
+        self.assertContains(respuesta, 'class="aspect-square w-full')   # visor cuadrado en móvil
+        self.assertContains(respuesta, "document.querySelector('#lector video')")
+
     def test_mensajes_claros_si_no_hay_camara_o_permiso(self):
         self.client.force_login(self.guardia)
         respuesta = self.client.get(reverse('qr:validar'))
