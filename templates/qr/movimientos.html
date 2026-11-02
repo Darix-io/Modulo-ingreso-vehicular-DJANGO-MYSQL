@@ -70,7 +70,7 @@
                 <option value="autorizado" {% if filtros.estado == 'autorizado' %}selected{% endif %}>Solo autorizados</option>
                 <option value="denegado" {% if filtros.estado == 'denegado' %}selected{% endif %}>Solo denegados</option>
             </select>
-            <div class="flex gap-2">
+            <div class="flex gap-2 [&>*]:flex-1 lg:[&>*]:flex-none">
                 <button type="submit" class="rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary">Buscar</button>
                 {% if hay_filtros %}<a href="{% url 'qr:movimientos' %}" class="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 no-underline hover:bg-slate-50">Limpiar</a>{% endif %}
             </div>
@@ -95,7 +95,7 @@
                         <td class="whitespace-nowrap px-5 py-3 font-mono text-xs text-slate-700 lg:px-6">{{ mov.fecha|date:"d/m/Y H:i:s" }}</td>
                         <td class="whitespace-nowrap px-3 py-3">{% include 'includes/placa.html' with placa=mov.vehiculo.placa %}</td>
                         <td class="px-3 py-3">
-                            <p class="font-semibold text-brand-neutral">{{ mov.vehiculo.propietario.nombre }}</p>
+                            <p class="min-w-[10rem] font-semibold text-brand-neutral">{{ mov.vehiculo.propietario.nombre }}</p>
                             <p class="text-xs text-slate-500">{{ mov.vehiculo.marca }} {{ mov.vehiculo.modelo }}</p>
                         </td>
                         <td class="px-3 py-3">

@@ -49,7 +49,7 @@
         <form method="get" class="flex flex-col gap-3 px-5 py-5 sm:flex-row lg:px-6" role="search">
             <div class="relative flex-1">
                 <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-slate-400">search</span>
-                <input type="search" name="q" value="{{ search_query }}" placeholder="Buscar por placa, marca, propietario o cédula…"
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Placa, marca o propietario"
                        class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-primary focus:outline-none">
             </div>
             <select name="estado" onchange="this.form.submit()" aria-label="Filtrar por estado"
@@ -78,9 +78,9 @@
                 <tbody class="divide-y divide-slate-100">
                     {% for vehiculo in vehiculos %}
                     <tr class="hover:bg-slate-50/60">
-                        <td class="px-5 py-3 lg:px-6">{% include 'includes/placa.html' with placa=vehiculo.placa %}</td>
+                        <td class="whitespace-nowrap px-5 py-3 lg:px-6">{% include 'includes/placa.html' with placa=vehiculo.placa %}</td>
                         <td class="px-3 py-3">
-                            <p class="font-semibold text-brand-neutral">{{ vehiculo.propietario.nombre }}</p>
+                            <p class="min-w-[10rem] font-semibold text-brand-neutral">{{ vehiculo.propietario.nombre }}</p>
                             <p class="font-mono text-xs text-slate-500">{{ vehiculo.propietario.numero_identidad }}</p>
                             {% if not vehiculo.propietario.estado %}<p class="mt-1 text-xs font-semibold text-red-700">Propietario inactivo: no puede ingresar</p>{% endif %}
                         </td>

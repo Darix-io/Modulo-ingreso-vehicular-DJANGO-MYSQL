@@ -40,7 +40,7 @@
             {% if tipo_filter %}<input type="hidden" name="tipo" value="{{ tipo_filter }}">{% endif %}
             <div class="relative flex-1">
                 <span class="material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xl text-slate-400">search</span>
-                <input type="search" name="q" value="{{ search_query }}" placeholder="Buscar por nombre, cédula o correo…"
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Nombre, cédula o correo"
                        class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-11 pr-4 text-sm shadow-sm placeholder:text-slate-400 focus:border-brand-primary focus:outline-none">
             </div>
             <select name="estado" onchange="this.form.submit()" aria-label="Filtrar por estado"

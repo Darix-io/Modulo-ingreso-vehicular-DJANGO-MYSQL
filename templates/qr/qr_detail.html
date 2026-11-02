@@ -23,15 +23,15 @@
                 </p>
             </div>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{% url 'qr:movimientos' %}?placa={{ qr.vehiculo.placa|urlencode }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">swap_horiz</span>Ver movimientos</a>
-            <a href="{% url 'qr:credencial' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">print</span>Imprimir credencial</a>
-            {% if qr.imagen %}<a href="{% url 'qr:descargar' qr.pk %}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">download</span>Descargar QR</a>{% endif %}
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <a href="{% url 'qr:movimientos' %}?placa={{ qr.vehiculo.placa|urlencode }}" class="inline-flex w-full items-center justify-center gap-2 sm:w-auto rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">swap_horiz</span>Ver movimientos</a>
+            <a href="{% url 'qr:credencial' qr.pk %}" class="inline-flex w-full items-center justify-center gap-2 sm:w-auto rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">print</span>Imprimir credencial</a>
+            {% if qr.imagen %}<a href="{% url 'qr:descargar' qr.pk %}" class="inline-flex w-full items-center justify-center gap-2 sm:w-auto rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline hover:bg-slate-50"><span class="material-symbols-outlined text-xl">download</span>Descargar QR</a>{% endif %}
             {% if user.is_administrador %}
             <form method="post" action="{% url 'qr:renovar' qr.pk %}" onsubmit="return confirm('Al renovar se genera un código nuevo y la credencial impresa anterior dejará de funcionar. ¿Renovar el QR de {{ qr.vehiculo.placa }}?');">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary"><span class="material-symbols-outlined text-xl text-secondary-container">autorenew</span>Renovar QR</button>
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 sm:w-auto rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary"><span class="material-symbols-outlined text-xl text-secondary-container">autorenew</span>Renovar QR</button>
             </form>
             {% endif %}
         </div>

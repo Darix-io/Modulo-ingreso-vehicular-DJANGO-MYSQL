@@ -13,14 +13,14 @@
             <h1 class="mt-3 font-headline text-3xl font-bold tracking-tight text-brand-neutral sm:text-4xl">{{ saludo }}, {{ user.first_name|default:user.username }}</h1>
             <p class="mt-2 max-w-2xl text-slate-500">Resumen del control de acceso vehicular de hoy en la Universidad Estatal de Milagro.</p>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a href="{% url 'qr:reporte_historial_pdf' %}?fecha_inicio={{ fecha_hoy }}&fecha_final={{ fecha_hoy }}"
-               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
+               class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-brand-primary no-underline shadow-sm hover:bg-slate-50">
                 <span class="material-symbols-outlined text-xl">download</span>
                 Descargar reporte del día
             </a>
             <a href="{% url 'qr:validar' %}"
-               class="inline-flex items-center gap-2 rounded-lg bg-secondary-container px-4 py-2.5 text-sm font-semibold text-brand-neutral no-underline shadow-sm hover:brightness-95">
+               class="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-container px-4 py-2.5 text-sm font-semibold text-brand-neutral no-underline shadow-sm hover:brightness-95">
                 <span class="material-symbols-outlined text-xl">qr_code_scanner</span>
                 Acceso rápido a escáner
             </a>
