@@ -323,6 +323,25 @@ class ResumenDashboardTests(TestCase):
         self.assertContains(respuesta, reverse('qr:validar'))
         self.assertNotContains(respuesta, 'Ajustar parámetros')    # solo administradores
 
+    def test_ultimos_movimientos_son_tarjetas_en_movil_y_tabla_en_escritorio(self):
+        v = self._vehiculo('GSA-3841')
+        self._movimiento(v, RegistroMovimiento.AUTORIZADO)
+        self._movimiento(v, RegistroMovimiento.DENEGADO, 'Código expirado', tipo=RegistroMovimiento.SALIDA)
+        self.client.force_login(self.guardia)
+        html = self.client.get('/dashboard/').content.decode()
+        # tarjetas solo en móvil (md:hidden) y tabla solo desde tablet (hidden md:block)
+        self.assertIn('<ul class="mt-4 space-y-2 px-5 pb-5 md:hidden" aria-label="Últimos movimientos del día">', html)
+        self.assertIn('class="mt-4 hidden overflow-x-auto md:block"', html)
+        tarjetas = html.split('md:hidden" aria-label="Últimos movimientos del día">')[1].split('</ul>')[0]
+        self.assertEqual(tarjetas.count('<li '), 2)
+        for texto in ('GSA-3841', 'Ana Mora', 'Ingreso', 'Salida', 'Autorizado', 'Denegado', 'Código expirado'):
+            self.assertIn(texto, tarjetas)
+
+    def test_sin_movimientos_el_panel_lo_explica_en_ambas_vistas(self):
+        self.client.force_login(self.guardia)
+        html = self.client.get('/dashboard/').content.decode()
+        self.assertEqual(html.count('No hay movimientos registrados hoy.'), 2)   # tarjetas y tabla
+
     def test_boton_de_configuracion_solo_para_administrador(self):
         rol = Rol.objects.create(nombre='Administrador')
         admin = get_user_model().objects.create_user(

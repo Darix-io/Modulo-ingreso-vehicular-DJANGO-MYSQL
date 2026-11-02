@@ -151,11 +151,34 @@
     {# ---------- Últimos movimientos y configuración ---------- #}
     <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <article class="rounded-2xl border border-slate-200 bg-white shadow-soft xl:col-span-2">
-            <div class="flex items-center justify-between gap-3 px-5 pt-5 lg:px-6">
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 pt-5 lg:px-6">
                 <h2 class="flex items-center gap-2 font-headline text-xl font-semibold text-brand-neutral"><span class="material-symbols-outlined text-brand-primary">swap_horiz</span>Últimos movimientos del día</h2>
                 <a href="{% url 'qr:movimientos' %}" class="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-brand-tertiary no-underline hover:underline">Ver registro completo<span class="material-symbols-outlined text-lg">arrow_forward</span></a>
             </div>
-            <div class="mt-4 overflow-x-auto">
+            {# Móvil: una tarjeta compacta por movimiento (como «Últimos accesos de hoy» en Validar acceso) #}
+            <ul class="mt-4 space-y-2 px-5 pb-5 md:hidden" aria-label="Últimos movimientos del día">
+                {% for movimiento in recent_movements %}
+                <li class="rounded-xl px-3 py-2.5 {% if movimiento.estado == 'DENEGADO' %}bg-red-50{% else %}bg-slate-50{% endif %}">
+                    <div class="flex items-center justify-between gap-3">
+                        {% include 'includes/placa.html' with placa=movimiento.vehiculo.placa %}
+                        <span class="shrink-0 font-mono text-xs text-slate-600">{{ movimiento.fecha|time:'H:i' }}</span>
+                    </div>
+                    <p class="mt-1.5 truncate text-sm font-medium text-brand-neutral">{{ movimiento.vehiculo.propietario.nombre }}</p>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1 rounded bg-slate-200/70 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase text-slate-700">
+                            <span class="material-symbols-outlined text-sm">{% if movimiento.tipo == 'INGRESO' %}login{% else %}logout{% endif %}</span>{{ movimiento.get_tipo_display }}
+                        </span>
+                        {% if movimiento.estado == 'AUTORIZADO' %}{% include 'includes/badge_estado.html' with texto='Autorizado' tono='verde' %}{% else %}{% include 'includes/badge_estado.html' with texto='Denegado' tono='rojo' %}{% endif %}
+                    </div>
+                    {% if movimiento.estado == 'DENEGADO' and movimiento.detalle %}<p class="mt-1 text-xs text-red-700">{{ movimiento.detalle }}</p>{% endif %}
+                </li>
+                {% empty %}
+                <li class="py-6 text-center text-sm text-slate-500">No hay movimientos registrados hoy.</li>
+                {% endfor %}
+            </ul>
+
+            {# Tablet y escritorio: la tabla #}
+            <div class="mt-4 hidden overflow-x-auto md:block">
                 <table class="w-full min-w-[640px] text-left text-sm">
                     <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                         <tr>
