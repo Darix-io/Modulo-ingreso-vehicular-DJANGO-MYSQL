@@ -95,3 +95,41 @@ class SinBootstrapTests(TestCase):
             for nombre, campo in formulario().fields.items():
                 clases = campo.widget.attrs.get('class', '')
                 self.assertIsNone(bootstrap.search(clases), f'{formulario.__name__}.{nombre}: {clases}')
+
+
+class ConfiguracionProduccionTests(TestCase):
+    """prod.py lee su configuración del entorno (PythonAnywhere: HTTPS detrás de un proxy)."""
+
+    def _cargar_prod(self, **entorno):
+        import importlib
+        import os
+        from unittest import mock
+        from config.settings import base, prod
+        with mock.patch.dict(os.environ, entorno), mock.patch.object(base, 'SECRET_KEY', 'clave-de-prueba'):
+            if 'DJANGO_CSRF_TRUSTED_ORIGINS' not in entorno:
+                os.environ.pop('DJANGO_CSRF_TRUSTED_ORIGINS', None)
+            return importlib.reload(prod)
+
+    def test_csrf_trusted_origins_se_lee_de_la_variable_de_entorno(self):
+        prod = self._cargar_prod(
+            DJANGO_CSRF_TRUSTED_ORIGINS='https://usuario.pythonanywhere.com, https://otro.example.com')
+        self.assertEqual(prod.CSRF_TRUSTED_ORIGINS,
+                         ['https://usuario.pythonanywhere.com', 'https://otro.example.com'])
+
+    def test_sin_la_variable_la_lista_queda_vacia(self):
+        self.assertEqual(self._cargar_prod().CSRF_TRUSTED_ORIGINS, [])
+
+    def test_proxy_https_y_cookies_seguras(self):
+        prod = self._cargar_prod()
+        self.assertEqual(prod.SECURE_PROXY_SSL_HEADER, ('HTTP_X_FORWARDED_PROTO', 'https'))
+        self.assertTrue(prod.SESSION_COOKIE_SECURE)
+        self.assertTrue(prod.CSRF_COOKIE_SECURE)
+        self.assertFalse(prod.DEBUG)
+
+    def test_media_y_static_tienen_ruta_para_el_servidor_web(self):
+        """PythonAnywhere sirve /static/ y /media/ desde STATIC_ROOT y MEDIA_ROOT (pestaña Web > Static files)."""
+        from django.conf import settings
+        from django.templatetags.static import static
+        self.assertTrue(settings.STATIC_ROOT.name == 'staticfiles' and settings.MEDIA_ROOT.name == 'media')
+        self.assertEqual(static('css/style.css'), '/static/css/style.css')
+        self.assertEqual(settings.MEDIA_URL, '/media/')

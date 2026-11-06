@@ -1,59 +1,37 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Iniciar sesión{% endblock %}
 
 
+{% block extra_css %}
+<style>
+    /* De arriba hacia abajo: patrón suave, capa azul oscuro (#0A2540) degradada, foto y color base.
+       Si static/img/login-fondo.jpg no existe, esa capa queda vacía y se ve el azul con el patrón. */
+    .login-fondo {
+        background-color: #0A2540;
+        background-image:
+            radial-gradient(rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px),
+            linear-gradient(to top right, rgba(10, 37, 64, 0.96) 15%, rgba(10, 37, 64, 0.80) 100%),
+            url("{% static 'img/login-fondo.jpg' %}");
+        background-size: 22px 22px, cover, cover;
+        background-position: 0 0, center, center;
+        background-repeat: repeat, no-repeat, no-repeat;
+    }
+</style>
+{% endblock %}
+
 {% block content_anonimo %}
 <div class="flex min-h-screen flex-col lg:flex-row">
 
-    {# Panel izquierdo: marca #}
-    <section class="relative flex min-h-[560px] w-full flex-col justify-between overflow-hidden bg-gradient-to-tr from-primary via-primary-container to-primary-container p-8 text-white sm:p-12 lg:min-h-screen lg:w-[55%] lg:p-16">
-        <div class="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-secondary-container/15 blur-3xl"></div>
-        <div class="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-white/10 blur-3xl"></div>
+    {# Panel izquierdo: logo, título y una frase sobre la imagen de fondo (en celular se reduce a una franja) #}
+    <section class="login-fondo relative flex w-full flex-col justify-between gap-8 overflow-hidden p-6 text-white sm:p-10 lg:min-h-screen lg:w-[55%] lg:gap-0 lg:p-16">
+        {% include 'includes/logo.html' with claro=True %}
 
-        <div class="relative">
-            {% include 'includes/logo.html' with claro=True %}
-            <p class="mt-2 text-sm font-medium text-white/70">Universidad Estatal de Milagro</p>
+        <div class="max-w-xl space-y-3 lg:my-auto lg:space-y-4">
+            <h1 class="font-headline text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-5xl">Control de acceso vehicular</h1>
+            <p class="text-sm text-white/80 sm:text-base lg:text-lg">Ingreso y salida del campus con códigos QR.</p>
         </div>
-
-        <div class="relative my-10 max-w-2xl space-y-8 lg:my-auto">
-            <div class="space-y-4">
-                <h1 class="font-headline text-4xl font-bold leading-tight tracking-tight">Control de acceso vehicular institucional</h1>
-                <p class="max-w-xl text-lg text-white/80">Gestión segura del ingreso y salida de vehículos del campus mediante códigos QR.</p>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
-                        <span class="material-symbols-outlined text-xl">qr_code_2</span>
-                    </span>
-                    <div>
-                        <p class="font-headline font-bold">Validación QR instantánea</p>
-                        <p class="mt-1 text-sm leading-snug text-white/70">Lectura rápida del código y registro inmediato en la garita.</p>
-                    </div>
-                </div>
-                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
-                        <span class="material-symbols-outlined text-xl">history</span>
-                    </span>
-                    <div>
-                        <p class="font-headline font-bold">Historial completo de accesos</p>
-                        <p class="mt-1 text-sm leading-snug text-white/70">Trazabilidad de los ingresos y movimientos registrados en la garita.</p>
-                    </div>
-                </div>
-                <div class="space-y-3 rounded-xl bg-black/30 p-4 backdrop-blur-md">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-secondary-container">
-                        <span class="material-symbols-outlined text-xl">file_download</span>
-                    </span>
-                    <div>
-                        <p class="font-headline font-bold">Reportes en PDF, Excel y CSV</p>
-                        <p class="mt-1 text-sm leading-snug text-white/70">Exporta el historial con filtros en un solo clic.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <p class="relative text-sm text-white/60">© UNEMI · Módulo de ingreso vehicular</p>
     </section>
 
     {# Panel derecho: formulario #}

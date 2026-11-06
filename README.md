@@ -141,6 +141,100 @@ Linux (cron):
 0 2 * * * /ruta/venv/bin/python /ruta/manage.py run_qr_maintenance
 ```
 
+## Despliegue en PythonAnywhere (plan gratuito)
+
+El plan gratuito da un subdominio `https://USUARIO.pythonanywhere.com` con HTTPS, que además es lo que necesita la
+cámara del celular. Cambia `USUARIO` por tu nombre de usuario de PythonAnywhere. SQLite sirve tal cual: no hay que crear
+ninguna base de datos.
+
+**1. Código y entorno** (pestaña *Consoles* → *Bash*):
+
+```bash
+git clone https://github.com/TU-USUARIO/TU-REPOSITORIO.git garitaqr
+cd garitaqr
+python3.12 -m venv venv            # usa la misma versión de Python que elijas en la pestaña Web
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+nano .env                          # ver el paso 2
+```
+
+**2. Archivo `.env`** (nunca se sube a Git):
+
+```
+DJANGO_SECRET_KEY=una-clave-larga-y-secreta        # genera una: python -c "import secrets; print(secrets.token_urlsafe(50))"
+DJANGO_ALLOWED_HOSTS=USUARIO.pythonanywhere.com
+DJANGO_CSRF_TRUSTED_ORIGINS=https://USUARIO.pythonanywhere.com
+VALIDACION_URL_BASE=https://USUARIO.pythonanywhere.com
+DB_NAME=db.sqlite3
+SEED_ADMIN_PASSWORD=...            # cambia las contraseñas de prueba
+SEED_SEGURIDAD_PASSWORD=...
+```
+
+`DJANGO_CSRF_TRUSTED_ORIGINS` lleva la dirección **completa con `https://`** (varias, separadas por comas). Sin ella, los
+formularios (incluido el inicio de sesión) dan error 403. `VALIDACION_URL_BASE` es la dirección que se guarda dentro de
+cada QR: ponla **antes** de crear los vehículos, porque los QR ya creados conservan la dirección con la que se generaron
+(se arreglan renovándolos).
+
+**3. Base de datos y archivos** (en la misma consola, con el entorno activado y `DJANGO_SETTINGS_MODULE=config.settings.prod`):
+
+```bash
+export DJANGO_SETTINGS_MODULE=config.settings.prod
+python manage.py migrate
+python manage.py seed_roles_users      # roles y usuarios (cambia las contraseñas después de entrar)
+python manage.py collectstatic --noinput
+```
+
+`collectstatic` copia el CSS a `staticfiles/`. Los QR se guardan en `media/qr_codes/` al crear cada vehículo.
+
+**4. Aplicación web** (pestaña *Web* → *Add a new web app* → *Manual configuration* → misma versión de Python):
+
+- *Source code* y *Working directory*: `/home/USUARIO/garitaqr`
+- *Virtualenv*: `/home/USUARIO/garitaqr/venv`
+- *WSGI configuration file*: reemplaza todo su contenido por:
+
+```python
+import os
+import sys
+
+ruta = '/home/USUARIO/garitaqr'
+if ruta not in sys.path:
+    sys.path.insert(0, ruta)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings.prod'
+
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
+```
+
+- *Static files* (en producción Django no sirve archivos: lo hace PythonAnywhere con esta tabla; **sin la fila de
+  `/media/` no se ven las imágenes de los QR**):
+
+| URL | Directorio |
+|---|---|
+| `/static/` | `/home/USUARIO/garitaqr/staticfiles` |
+| `/media/` | `/home/USUARIO/garitaqr/media` |
+
+- *Force HTTPS*: actívalo. Pulsa **Reload** y abre `https://USUARIO.pythonanywhere.com`.
+
+La configuración de producción (`config/settings/prod.py`) ya trae `DEBUG=False`, cookies solo por HTTPS y
+`SECURE_PROXY_SSL_HEADER`, que le dice a Django que la petición llegó por HTTPS aunque pase por el proxy de PythonAnywhere.
+
+**5. Mantenimiento de los QR:** en la pestaña *Tasks* crea una tarea diaria (el plan gratuito permite una) con el comando
+siguiente (ver «Tarea programada»); el prefijo hace que use la configuración de producción:
+
+```
+DJANGO_SETTINGS_MODULE=config.settings.prod /home/USUARIO/garitaqr/venv/bin/python /home/USUARIO/garitaqr/manage.py run_qr_maintenance
+```
+
+**Actualizar después de cambios:** `git pull`, luego `pip install -r requirements.txt`, `python manage.py migrate`,
+`python manage.py collectstatic --noinput` y **Reload** en la pestaña *Web*.
+
+**Si algo falla:** el registro de errores está en la pestaña *Web* (*Error log*). Un 400 suele ser un host que falta en
+`DJANGO_ALLOWED_HOSTS`; un 403 al iniciar sesión, un `DJANGO_CSRF_TRUSTED_ORIGINS` mal escrito; el CSS sin estilos o los QR
+sin imagen, una fila que falta en la tabla de *Static files*. En el plan gratuito la aplicación se desactiva si no entras
+a PythonAnywhere en unos meses: pulsa el botón de extender en la pestaña *Web*.
+
 ## Cámara y celular
 
 El escáner usa la cámara del navegador, que solo está disponible en **`localhost` o con HTTPS**. Si la cámara no
