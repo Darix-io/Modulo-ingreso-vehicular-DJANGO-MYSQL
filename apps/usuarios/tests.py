@@ -125,3 +125,24 @@ class IncludesYFiltrosTests(TestCase):
         badge = render_to_string('includes/badge_estado.html', {'texto': 'Autorizado', 'tono': 'verde'})
         self.assertIn('Autorizado', badge)
         self.assertIn('emerald', badge)
+
+
+class PantallaLoginTests(TestCase):
+    """Panel izquierdo del login: solo logo, título y una frase sobre la imagen de fondo."""
+
+    def test_panel_izquierdo_minimo_con_fondo_y_respaldo(self):
+        respuesta = self.client.get('/login/')
+        self.assertEqual(respuesta.status_code, 200)
+        for texto in ('Control de acceso vehicular', 'Ingreso y salida del campus con códigos QR.',
+                      'img/login-fondo.jpg', 'rgba(10, 37, 64', 'background-color: #0A2540', 'Bienvenido'):
+            self.assertContains(respuesta, texto)
+        for texto in ('Validación QR instantánea', 'Historial completo de accesos', 'Reportes en PDF, Excel y CSV',
+                      'Universidad Estatal de Milagro'):
+            self.assertNotContains(respuesta, texto)
+
+    def test_sin_la_imagen_la_pagina_sigue_funcionando(self):
+        """El archivo aún no está en static/img/: el fondo azul con patrón cubre su lugar."""
+        from pathlib import Path
+        from django.conf import settings
+        if not (Path(settings.BASE_DIR) / 'static' / 'img' / 'login-fondo.jpg').exists():
+            self.assertEqual(self.client.get('/login/').status_code, 200)
